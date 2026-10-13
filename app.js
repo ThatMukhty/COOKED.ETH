@@ -84,7 +84,6 @@ async function executeWalletConnect(walletType) {
     try {
         let rawProvider = null;
 
-        // Detect wallet extensions cleanly
         if (walletType === 'phantom' && window.phantom && window.phantom.ethereum) {
             rawProvider = window.phantom.ethereum;
         } else if (walletType === 'coinbase' && window.coinbaseWalletExtension) {
@@ -94,7 +93,7 @@ async function executeWalletConnect(walletType) {
         }
 
         if (!rawProvider) {
-            alert(`Could not detect ${walletType.toUpperCase()} wallet extension! Make sure your wallet extension is enabled in your browser.`);
+            alert(`Could not detect ${walletType.toUpperCase()} wallet extension! Make sure your wallet extension is enabled.`);
             return;
         }
 
@@ -103,18 +102,15 @@ async function executeWalletConnect(walletType) {
         signer = provider.getSigner();
         const account = await signer.getAddress();
 
-        // Signature verification
         const message = `COOKED.ETH Verification\n\nConfirming ownership for Rewards Queue.\nAddress: ${account}`;
         await signer.signMessage(message);
 
-        // Award +500 PTS
         if (!ApplicationState.isVerified) {
             ApplicationState.userWallet = account;
             ApplicationState.isVerified = true;
             ApplicationState.points += 500;
         }
 
-        // Calculate Real On-Chain Loss
         try {
             const balanceWei = await provider.getBalance(account);
             const balanceEth = parseFloat(ethers.utils.formatEther(balanceWei));
@@ -124,7 +120,6 @@ async function executeWalletConnect(walletType) {
             ApplicationState.totalLossETH = 0.0000;
         }
 
-        // Update UI Elements
         const pointsDisplay = document.getElementById('user-points');
         const lossDisplay = document.getElementById('user-total-loss');
         const walletStatusIndicator = document.getElementById('wallet-status-indicator');
@@ -145,11 +140,11 @@ async function executeWalletConnect(walletType) {
         alert(`Successfully connected via ${walletType.toUpperCase()}! +500 Points added.`);
 
     } catch (err) {
-        console.error("Wallet Error:", err);
+        console.error("Wallet Connection Error:", err);
         if (err.code === 4001) {
-            alert("Connection or signature request was rejected.");
+            alert("Connection request was rejected.");
         } else {
-            alert("Failed to connect wallet. Please ensure your wallet extension is unlocked.");
+            alert("Failed to connect wallet. Ensure your wallet extension is unlocked.");
         }
     }
 }
