@@ -107,53 +107,57 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     updateProgressBar();
 
-    function validateEthAddress(input) {
-    return /^0x[a-fA-F0-9]{40}$/.test(input) || /^0x[a-fA-F0-9]{66}$/.test(input);
+   // OPEN CUSTOM WALLET MODAL
+function openWalletModal() {
+    const modal = document.getElementById('wallet-modal');
+    if (modal) modal.classList.remove('hidden');
 }
-   async function connectWalletAction() {
-    try {
-        let rawProvider;
 
-        // 1. Try connecting via Web3Modal
-        if (web3Modal) {
-            try {
-                rawProvider = await web3Modal.connect();
-            } catch (modalErr) {
-                // If Web3Modal is closed or fails, fallback directly to window.ethereum
-                if (window.ethereum) {
-                    rawProvider = window.ethereum;
-                } else {
-                    throw modalErr;
-                }
-            }
+// CLOSE CUSTOM WALLET MODAL
+function closeWalletModal() {
+    const modal = document.getElementById('wallet-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+// CONNECT TO SELECTED WALLET PROVIDER
+async function executeWalletConnect(walletType) {
+    closeWalletModal();
+    
+    try {
+        let rawProvider = null;
+
+        // Detect injected provider based on wallet choice
+        if (walletType === 'phantom' && window.phantom && window.phantom.ethereum) {
+            rawProvider = window.phantom.ethereum;
+        } else if (walletType === 'coinbase' && window.coinbaseWalletExtension) {
+            rawProvider = window.coinbaseWalletExtension;
         } else if (window.ethereum) {
-            // Direct fallback if Web3Modal CDN failed to load
+            // MetaMask, Axiom, Rabby, Trust Wallet, Zerion, Rainbow inject into window.ethereum
             rawProvider = window.ethereum;
-        } else {
-            alert("No Web3 wallet detected! Please install MetaMask or another EVM wallet extension.");
+        }
+
+        if (!rawProvider) {
+            alert(`Could not detect ${walletType.toUpperCase()} browser extension. Please ensure your wallet extension is enabled!`);
             return;
         }
 
-        // 2. Wrap provider with Ethers
         provider = new ethers.providers.Web3Provider(rawProvider);
-        
-        // Request account access if needed
         await provider.send("eth_requestAccounts", []);
         signer = provider.getSigner();
         const account = await signer.getAddress();
 
-        // 3. Signature Request
+        // Verification Signature
         const message = `COOKED.ETH Verification\n\nConfirming ownership for Rewards Queue.\nAddress: ${account}`;
         await signer.signMessage(message);
 
-        // 4. Update State & Award +500 PTS
+        // Award +500 PTS
         if (!ApplicationState.isVerified) {
             ApplicationState.userWallet = account;
             ApplicationState.isVerified = true;
             ApplicationState.points += 500;
         }
 
-        // 5. Fetch Real On-Chain Loss
+        // Calculate Real Loss Metric
         try {
             const balanceWei = await provider.getBalance(account);
             const balanceEth = parseFloat(ethers.utils.formatEther(balanceWei));
@@ -163,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ApplicationState.totalLossETH = 0.0000;
         }
 
-        // 6. Update UI
+        // Update UI
         if (walletStatusIndicator) {
             walletStatusIndicator.innerText = `${account.substring(0, 6)}... (VERIFIED)`;
             walletStatusIndicator.classList.replace('bg-paper', 'bg-mint');
@@ -176,14 +180,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (lossDisplay) lossDisplay.innerText = `${ApplicationState.totalLossETH.toFixed(4)} ETH`;
 
         SoundSystem.playCoinTone();
-        alert('Wallet connected & verified! +500 Points added.');
+        alert(`Successfully connected via ${walletType.toUpperCase()}! +500 Points added.`);
 
     } catch (err) {
-        console.error("Wallet Connection Error:", err);
+        console.error("Wallet Error:", err);
         if (err.code === 4001) {
-            alert("Connection request was rejected in your wallet.");
+            alert("Connection request was rejected.");
         } else {
-            alert("Wallet connection failed. Make sure your browser extension (MetaMask/Rabby/Phantom) is unlocked and try again.");
+            alert("Failed to connect wallet. Please ensure your wallet extension is unlocked.");
         }
     }
 }
