@@ -66,14 +66,13 @@ const UnhingedEpitaphs = [
     "Slipped on 99% slippage and got completely liquidated.",
     "Chased a green candle straight into the abyss."
 ];
-
 document.addEventListener('DOMContentLoaded', () => {
-    // Robust Web3Modal setup for multi-wallet options (MetaMask, WalletConnect, Coinbase, etc.)
+    // Initialize Web3Modal cleanly with injected fallback support
     if (window.Web3Modal) {
         const Web3Modal = window.Web3Modal.default;
         web3Modal = new Web3Modal({
             cacheProvider: false,
-            providerOptions: {} // Automatically handles injected providers and WalletConnect bridge
+            providerOptions: {} 
         });
     }
 
@@ -111,28 +110,50 @@ document.addEventListener('DOMContentLoaded', () => {
     function validateEthAddress(input) {
     return /^0x[a-fA-F0-9]{40}$/.test(input) || /^0x[a-fA-F0-9]{66}$/.test(input);
 }
-    async function connectWalletAction() {
+   async function connectWalletAction() {
     try {
-        if (!web3Modal) {
-            alert("Web3Modal initializing... If in Incognito, ensure your wallet extension is allowed in Incognito mode.");
+        let rawProvider;
+
+        // 1. Try connecting via Web3Modal
+        if (web3Modal) {
+            try {
+                rawProvider = await web3Modal.connect();
+            } catch (modalErr) {
+                // If Web3Modal is closed or fails, fallback directly to window.ethereum
+                if (window.ethereum) {
+                    rawProvider = window.ethereum;
+                } else {
+                    throw modalErr;
+                }
+            }
+        } else if (window.ethereum) {
+            // Direct fallback if Web3Modal CDN failed to load
+            rawProvider = window.ethereum;
+        } else {
+            alert("No Web3 wallet detected! Please install MetaMask or another EVM wallet extension.");
             return;
         }
-        const instance = await web3Modal.connect();
-        provider = new ethers.providers.Web3Provider(instance);
+
+        // 2. Wrap provider with Ethers
+        provider = new ethers.providers.Web3Provider(rawProvider);
+        
+        // Request account access if needed
+        await provider.send("eth_requestAccounts", []);
         signer = provider.getSigner();
         const account = await signer.getAddress();
 
+        // 3. Signature Request
         const message = `COOKED.ETH Verification\n\nConfirming ownership for Rewards Queue.\nAddress: ${account}`;
         await signer.signMessage(message);
 
-        // Award +500 PTS only on successful wallet signature
+        // 4. Update State & Award +500 PTS
         if (!ApplicationState.isVerified) {
             ApplicationState.userWallet = account;
             ApplicationState.isVerified = true;
             ApplicationState.points += 500;
         }
 
-        // Fetch Real On-Chain Loss
+        // 5. Fetch Real On-Chain Loss
         try {
             const balanceWei = await provider.getBalance(account);
             const balanceEth = parseFloat(ethers.utils.formatEther(balanceWei));
@@ -140,6 +161,15 @@ document.addEventListener('DOMContentLoaded', () => {
             ApplicationState.totalLossETH = txCount > 0 ? (txCount * 0.0018) + (balanceEth * 0.05) : 0.0000;
         } catch (e) {
             ApplicationState.totalLossETH = 0.0000;
+        }
+
+        // 6. Update UI
+        if (walletStatusIndicator) {
+            walletStatusIndicator.innerText = `${account.substring(0, 6)}... (VERIFIED)`;
+            walletStatusIndicator.classList.replace('bg-paper', 'bg-mint');
+        }
+        if (btnHeaderConnect) {
+            btnHeaderConnect.innerText = `${account.substring(0, 6)}...`;
             btnHeaderConnect.classList.replace('bg-mustard', 'bg-mint');
         }
         if (pointsDisplay) pointsDisplay.innerText = `${ApplicationState.points.toLocaleString()} PTS`;
@@ -147,9 +177,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         SoundSystem.playCoinTone();
         alert('Wallet connected & verified! +500 Points added.');
+
     } catch (err) {
-        console.error(err);
-        alert('Connection or signature cancelled. If using Incognito, enable wallet extensions in Incognito settings or deploy to test live.');
+        console.error("Wallet Connection Error:", err);
+        if (err.code === 4001) {
+            alert("Connection request was rejected in your wallet.");
+        } else {
+            alert("Wallet connection failed. Make sure your browser extension (MetaMask/Rabby/Phantom) is unlocked and try again.");
+        }
     }
 }
     if (btnHeaderConnect) {
