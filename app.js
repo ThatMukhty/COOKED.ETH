@@ -67,15 +67,24 @@ const UnhingedEpitaphs = [
     "Chased a green candle straight into the abyss."
 ];
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize Web3Modal cleanly with injected fallback support
-    if (window.Web3Modal) {
-        const Web3Modal = window.Web3Modal.default;
-        web3Modal = new Web3Modal({
-            cacheProvider: false,
-            providerOptions: {} 
-        });
+    // === CUSTOM WALLET MODAL LISTENERS ===
+    const btnConnectHeader = document.getElementById('btn-header-connect');
+    const btnCloseModal = document.getElementById('btn-close-modal');
+
+    if (btnConnectHeader) {
+        btnConnectHeader.addEventListener('click', openWalletModal);
     }
 
+    if (btnCloseModal) {
+        btnCloseModal.addEventListener('click', closeWalletModal);
+    }
+
+    document.querySelectorAll('.btn-wallet-option').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const wallet = e.currentTarget.getAttribute('data-wallet');
+            executeWalletConnect(wallet);
+        });
+    });
     const btnTabMourn = document.getElementById('btn-tab-mourn');
     const btnTabEarn = document.getElementById('btn-tab-earn');
     const tabMourn = document.getElementById('tab-mourn');
