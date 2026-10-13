@@ -39,7 +39,6 @@ const SoundSystem = {
     }
 };
 
-let web3Modal;
 let provider;
 let signer;
 
@@ -66,63 +65,13 @@ const UnhingedEpitaphs = [
     "Slipped on 99% slippage and got completely liquidated.",
     "Chased a green candle straight into the abyss."
 ];
-document.addEventListener('DOMContentLoaded', () => {
-    // === CUSTOM WALLET MODAL LISTENERS ===
-    const btnConnectHeader = document.getElementById('btn-header-connect');
-    const btnCloseModal = document.getElementById('btn-close-modal');
 
-    if (btnConnectHeader) {
-        btnConnectHeader.addEventListener('click', openWalletModal);
-    }
-
-    if (btnCloseModal) {
-        btnCloseModal.addEventListener('click', closeWalletModal);
-    }
-
-    document.querySelectorAll('.btn-wallet-option').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const wallet = e.currentTarget.getAttribute('data-wallet');
-            executeWalletConnect(wallet);
-        });
-    });
-    const btnTabMourn = document.getElementById('btn-tab-mourn');
-    const btnTabEarn = document.getElementById('btn-tab-earn');
-    const tabMourn = document.getElementById('tab-mourn');
-    const tabEarn = document.getElementById('tab-earn');
-    const btnSubmitCA = document.getElementById('btn-submit-ca');
-    const inputCA = document.getElementById('ca-input');
-    const graveyardFeed = document.getElementById('graveyard-feed');
-    const pointsDisplay = document.getElementById('user-points');
-    const lossDisplay = document.getElementById('user-total-loss');
-    const walletStatusIndicator = document.getElementById('wallet-status-indicator');
-    const btnHeaderConnect = document.getElementById('btn-header-connect');
-    const tombstoneContainer = document.getElementById('tombstone-card-container');
-    const tombTargetName = document.getElementById('tomb-target-name');
-    const tombEpitaph = document.getElementById('tomb-epitaph');
-    const tombLossVal = document.getElementById('tomb-loss-val');
-    const btnDownloadCard = document.getElementById('btn-download-card');
-    const poolProgressBar = document.getElementById('pool-progress-bar');
-    const poolCurrentDisplay = document.getElementById('pool-current-eth');
-    const fcfsSlotsBadge = document.getElementById('fcfs-slots-badge');
-    const btnFcfsClaim = document.getElementById('btn-fcfs-claim');
-
-    function updateProgressBar() {
-        if (poolProgressBar && poolCurrentDisplay && fcfsSlotsBadge) {
-            const percentage = Math.min((ApplicationState.poolCurrentETH / ApplicationState.poolTargetETH) * 100, 100);
-            poolProgressBar.style.width = `${percentage}%`;
-            poolCurrentDisplay.innerText = `${ApplicationState.poolCurrentETH.toFixed(2)} ETH`;
-            fcfsSlotsBadge.innerText = `${ApplicationState.fcfsSpotsLeft} / 500 LEFT`;
-        }
-    }
-    updateProgressBar();
-
-   // OPEN CUSTOM WALLET MODAL
+// MODAL CONTROLLERS
 function openWalletModal() {
     const modal = document.getElementById('wallet-modal');
     if (modal) modal.classList.remove('hidden');
 }
 
-// CLOSE CUSTOM WALLET MODAL
 function closeWalletModal() {
     const modal = document.getElementById('wallet-modal');
     if (modal) modal.classList.add('hidden');
@@ -135,18 +84,17 @@ async function executeWalletConnect(walletType) {
     try {
         let rawProvider = null;
 
-        // Detect injected provider based on wallet choice
+        // Detect wallet extensions cleanly
         if (walletType === 'phantom' && window.phantom && window.phantom.ethereum) {
             rawProvider = window.phantom.ethereum;
         } else if (walletType === 'coinbase' && window.coinbaseWalletExtension) {
             rawProvider = window.coinbaseWalletExtension;
         } else if (window.ethereum) {
-            // MetaMask, Axiom, Rabby, Trust Wallet, Zerion, Rainbow inject into window.ethereum
             rawProvider = window.ethereum;
         }
 
         if (!rawProvider) {
-            alert(`Could not detect ${walletType.toUpperCase()} browser extension. Please ensure your wallet extension is enabled!`);
+            alert(`Could not detect ${walletType.toUpperCase()} wallet extension! Make sure your wallet extension is enabled in your browser.`);
             return;
         }
 
@@ -155,7 +103,7 @@ async function executeWalletConnect(walletType) {
         signer = provider.getSigner();
         const account = await signer.getAddress();
 
-        // Verification Signature
+        // Signature verification
         const message = `COOKED.ETH Verification\n\nConfirming ownership for Rewards Queue.\nAddress: ${account}`;
         await signer.signMessage(message);
 
@@ -166,7 +114,7 @@ async function executeWalletConnect(walletType) {
             ApplicationState.points += 500;
         }
 
-        // Calculate Real Loss Metric
+        // Calculate Real On-Chain Loss
         try {
             const balanceWei = await provider.getBalance(account);
             const balanceEth = parseFloat(ethers.utils.formatEther(balanceWei));
@@ -176,7 +124,12 @@ async function executeWalletConnect(walletType) {
             ApplicationState.totalLossETH = 0.0000;
         }
 
-        // Update UI
+        // Update UI Elements
+        const pointsDisplay = document.getElementById('user-points');
+        const lossDisplay = document.getElementById('user-total-loss');
+        const walletStatusIndicator = document.getElementById('wallet-status-indicator');
+        const btnHeaderConnect = document.getElementById('btn-header-connect');
+
         if (walletStatusIndicator) {
             walletStatusIndicator.innerText = `${account.substring(0, 6)}... (VERIFIED)`;
             walletStatusIndicator.classList.replace('bg-paper', 'bg-mint');
@@ -194,14 +147,58 @@ async function executeWalletConnect(walletType) {
     } catch (err) {
         console.error("Wallet Error:", err);
         if (err.code === 4001) {
-            alert("Connection request was rejected.");
+            alert("Connection or signature request was rejected.");
         } else {
             alert("Failed to connect wallet. Please ensure your wallet extension is unlocked.");
         }
     }
 }
-    if (btnHeaderConnect) {
-        btnHeaderConnect.addEventListener('click', connectWalletAction);
+
+document.addEventListener('DOMContentLoaded', () => {
+    const btnTabMourn = document.getElementById('btn-tab-mourn');
+    const btnTabEarn = document.getElementById('btn-tab-earn');
+    const tabMourn = document.getElementById('tab-mourn');
+    const tabEarn = document.getElementById('tab-earn');
+    const btnSubmitCA = document.getElementById('btn-submit-ca');
+    const inputCA = document.getElementById('ca-input');
+    const graveyardFeed = document.getElementById('graveyard-feed');
+    const pointsDisplay = document.getElementById('user-points');
+    const lossDisplay = document.getElementById('user-total-loss');
+    const tombstoneContainer = document.getElementById('tombstone-card-container');
+    const tombTargetName = document.getElementById('tomb-target-name');
+    const tombEpitaph = document.getElementById('tomb-epitaph');
+    const tombLossVal = document.getElementById('tomb-loss-val');
+    const btnDownloadCard = document.getElementById('btn-download-card');
+    const poolProgressBar = document.getElementById('pool-progress-bar');
+    const poolCurrentDisplay = document.getElementById('pool-current-eth');
+    const fcfsSlotsBadge = document.getElementById('fcfs-slots-badge');
+    const btnFcfsClaim = document.getElementById('btn-fcfs-claim');
+    const btnConnectHeader = document.getElementById('btn-header-connect');
+    const btnCloseModal = document.getElementById('btn-close-modal');
+
+    // Attach Wallet Modal Trigger Listeners
+    if (btnConnectHeader) btnConnectHeader.addEventListener('click', openWalletModal);
+    if (btnCloseModal) btnCloseModal.addEventListener('click', closeWalletModal);
+
+    document.querySelectorAll('.btn-wallet-option').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const wallet = e.currentTarget.getAttribute('data-wallet');
+            executeWalletConnect(wallet);
+        });
+    });
+
+    function updateProgressBar() {
+        if (poolProgressBar && poolCurrentDisplay && fcfsSlotsBadge) {
+            const percentage = Math.min((ApplicationState.poolCurrentETH / ApplicationState.poolTargetETH) * 100, 100);
+            poolProgressBar.style.width = `${percentage}%`;
+            poolCurrentDisplay.innerText = `${ApplicationState.poolCurrentETH.toFixed(2)} ETH`;
+            fcfsSlotsBadge.innerText = `${ApplicationState.fcfsSpotsLeft} / 500 LEFT`;
+        }
+    }
+    updateProgressBar();
+
+    function validateEthAddress(input) {
+        return /^0x[a-fA-F0-9]{40}$/.test(input) \vert{}\vert{} /^0x[a-fA-F0-9]{66}$/.test(input);
     }
 
     function renderFeed() {
@@ -247,7 +244,7 @@ async function executeWalletConnect(walletType) {
             tabEarn.classList.remove('hidden');
             tabMourn.classList.add('hidden');
             btnTabEarn.classList.replace('bg-white', 'bg-mustard');
-            btnTabMourn.classList.replace('bg-mustard', 'bg-white');
+            btnTabEarn.classList.replace('bg-mustard', 'bg-white');
         });
     }
 
@@ -265,7 +262,7 @@ async function executeWalletConnect(walletType) {
             }
 
             ApplicationState.loggedAddresses.add(value);
-            ApplicationState.points += 1000; // Certificate log = 1,000 PTS
+            ApplicationState.points += 1000;
             const certLoss = ApplicationState.totalLossETH > 0 ? ApplicationState.totalLossETH : 0.0350;
 
             const shortAddr = `${value.substring(0, 6)}...${value.substring(value.length - 4)}`;
@@ -292,35 +289,34 @@ async function executeWalletConnect(walletType) {
         });
     }
 
-  if (btnDownloadCard) {
-    btnDownloadCard.addEventListener('click', () => {
-        const addr = ApplicationState.userWallet || "0x0000...0000";
-        const loss = ApplicationState.totalLossETH > 0 ? ApplicationState.totalLossETH.toFixed(4) : "0.0350";
-        const epitaph = document.getElementById('tomb-epitaph') ? document.getElementById('tomb-epitaph').innerText : "";
+    if (btnDownloadCard) {
+        btnDownloadCard.addEventListener('click', () => {
+            const addr = ApplicationState.userWallet || "0x0000...0000";
+            const loss = ApplicationState.totalLossETH > 0 ? ApplicationState.totalLossETH.toFixed(4) : "0.0350";
+            const epitaph = document.getElementById('tomb-epitaph') ? document.getElementById('tomb-epitaph').innerText : "";
 
-        const certContent = `====================================\n🔥 OFFICIAL COOKED CERTIFICATE OF PAIN 🔥\n====================================\n\nTarget Wallet: ${addr}\nEpitaph: ${epitaph}\nVerified Loss Metric: ${loss} ETH\nStatus: FRIED\n\nIssued by COOKED.ETH\nClaim your share: https://cooked.eth\n====================================`;
+            const certContent = `====================================\n🔥 OFFICIAL COOKED CERTIFICATE OF PAIN 🔥\n====================================\n\nTarget Wallet: ${addr}\nEpitaph: ${epitaph}\nVerified Loss Metric: ${loss} ETH\nStatus: FRIED\n\nIssued by COOKED.ETH\nClaim your share: https://cooked.eth\n====================================`;
 
-        navigator.clipboard.writeText(certContent).then(() => {
-            alert('Certificate text copied to clipboard! Preparing text file download...');
-        }).catch(() => {});
+            navigator.clipboard.writeText(certContent).then(() => {
+                alert('Certificate text copied to clipboard! Preparing text file download...');
+            }).catch(() => {});
 
-        const blob = new Blob([certContent], { type: 'text/plain' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Cooked_Certificate_${addr.substring(0, 6)}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-    });
-}
-    // X Handle & URL Verification Logic (Opening X in a new tab with web intent)
+            const blob = new Blob([certContent], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Cooked_Certificate_${addr.substring(0, 6)}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        });
+    }
+
     document.querySelectorAll('.btn-submit-quest').forEach(button => {
         button.addEventListener('click', (e) => {
             const questId = e.currentTarget.getAttribute('data-quest');
             
-            // Open X share intent in a new tab so user doesn't lose their place on the app
             const tweetText = encodeURIComponent(`I'm officially certified COOKED on COOKED.ETH! Turning my trench losses into rewards. Join the raid: https://cooked.eth #COOKED`);
             window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
 
@@ -352,7 +348,7 @@ async function executeWalletConnect(walletType) {
             }
 
             ApplicationState.submittedQuestLinks.add(cleanLink);
-            ApplicationState.points += 1500; // Each raid = 1,500 PTS
+            ApplicationState.points += 1500;
             pointsDisplay.innerText = `${ApplicationState.points.toLocaleString()} PTS`;
             
             SoundSystem.playCoinTone();
@@ -360,7 +356,6 @@ async function executeWalletConnect(walletType) {
         });
     });
 
-    // Token-Gated Rewards Claim Logic
     if (btnFcfsClaim) {
         btnFcfsClaim.addEventListener('click', async () => {
             if (ApplicationState.points < 5000) {
@@ -369,8 +364,8 @@ async function executeWalletConnect(walletType) {
             }
 
             if (!ApplicationState.isVerified || !ApplicationState.userWallet) {
-                await connectWalletAction();
-                if (!ApplicationState.isVerified) return;
+                openWalletModal();
+                return;
             }
 
             if (ApplicationState.fcfsSpotsLeft <= 0) {
@@ -378,17 +373,16 @@ async function executeWalletConnect(walletType) {
                 return;
             }
 
-            // TOKEN-GATE CHECK VIA RPC
             try {
                 if (DEPLOYED_COOKED_CA === "0x0000000000000000000000000000000000000000") {
-                    console.warn("WARNING: Deployed Token CA is set to placeholder. Bypassing live ERC-20 check for testing.");
+                    console.warn("CA is set to placeholder. Bypassing live ERC-20 check.");
                 } else {
                     const minABI = ["function balanceOf(address owner) view returns (uint256)"];
                     const tokenContract = new ethers.Contract(DEPLOYED_COOKED_CA, minABI, provider);
                     const balance = await tokenContract.balanceOf(ApplicationState.userWallet);
                     
                     if (balance.eq(0)) {
-                        alert("Token Gate Rejection: Insufficient COOKED token balance detected in your wallet. Buy COOKED to unlock your rewards claim!");
+                        alert("Token Gate Rejection: Insufficient COOKED token balance in wallet.");
                         return;
                     }
                 }
@@ -399,10 +393,10 @@ async function executeWalletConnect(walletType) {
                 updateProgressBar();
 
                 SoundSystem.playCoinTone();
-                alert(`SUCCESS! Slot secured in Rewards Queue (${ApplicationState.fcfsSpotsLeft} spots remaining). Your payout will drop in the next batch distribution.`);
+                alert(`SUCCESS! Slot secured in Rewards Queue (${ApplicationState.fcfsSpotsLeft} spots remaining).`);
             } catch (err) {
                 console.error(err);
-                alert("Token verification failed or network error occurred.");
+                alert("Token verification failed.");
             }
         });
     }
