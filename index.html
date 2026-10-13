@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COOKED.ETH — Ethereum Trench Rave-cation & Rewards</title>
+
+    <!-- SEO & Primary Meta Tags -->
+    <meta name="title" content="COOKED.ETH — Ethereum Trench Rave-cation & Rewards">
+    <meta name="description" content="Log your dead contract losses, complete community raids, and secure your share of the Robinhood L2 fee distribution pool.">
+    <meta name="theme-color" content="#FFF6E5">
+
+    <!-- Open Graph / Social Preview Tags -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://cooked.eth/">
+    <meta property="og:title" content="COOKED.ETH — Turn Your Trench Pain into Rewards">
+    <meta property="og:description" content="Generate your Cooked Certificate of Pain, complete X raids, and claim ETH from the token-gated Robinhood fee pool.">
+    <meta property="og:image" content="preview-card.png">
+
+    <!-- Twitter / X Meta Tags -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://cooked.eth/">
+    <meta property="twitter:title" content="COOKED.ETH — Ethereum Trench Rave-cation">
+    <meta property="twitter:description" content="Bought the top? Paid the gas? Dev dumped? Log your dead CAs and claim your ETH share.">
+    <meta property="twitter:image" content="preview-card.png">
+
+    <!-- Tailwind CSS & Web3 Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3modal@1.9.12/dist/index.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-paper text-black font-mono antialiased min-h-screen pb-16">
+
+    <!-- Header Navigation -->
+    <header class="border-b-2 border-black bg-white px-4 py-3 sticky top-0 z-50 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+            <span class="text-base sm:text-lg font-extrabold tracking-wider bg-mustard px-2 py-0.5 border-2 border-black brutalist-shadow-sm">🍳 COOKED.ETH</span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button id="btn-header-connect" class="bg-mustard text-black px-3 py-1 text-xs font-extrabold border-2 border-black brutalist-shadow-sm hover:bg-yellow-400 transition-all">
+                CONNECT WALLET
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto px-4 mt-4 space-y-4">
+
+        <!-- Hero Rhyme Banner -->
+        <section class="bg-white border-2 border-black p-3.5 brutalist-shadow text-xs leading-relaxed font-bold">
+            <p class="text-crimson mb-1 uppercase tracking-wider text-[10px]">⚠️ Trench Warning:</p>
+            <p class="italic text-neutral-900">
+                "You bought the top, you paid the gas,<br>
+                The dev dumped coins and took your cash.<br>
+                Now log your losses, claim your share,<br>
+                And turn your pain to Robinhood air."
+            </p>
+        </section>
+
+        <!-- User Metrics Banner -->
+        <section class="bg-crimson border-2 border-black p-4 brutalist-shadow text-white">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-wide opacity-90 text-black">Verified On-Chain Losses</p>
+                    <h2 id="user-total-loss" class="text-2xl sm:text-3xl font-extrabold mt-0.5 text-black">0.0000 ETH</h2>
+                </div>
+                <span class="bg-white text-black px-2 py-0.5 border border-black text-[10px] font-extrabold">DEGEN TIER</span>
+            </div>
+            <div class="mt-3 flex justify-between items-center text-xs font-bold pt-2 border-t-2 border-black text-black">
+                <span>MOURNING POINTS: <strong id="user-points">0 PTS</strong></span>
+                <span id="wallet-status-indicator" class="bg-paper px-2 py-0.5 border border-black text-[10px]">UNCONNECTED</span>
+            </div>
+        </section>
+
+        <!-- Navigation Tabs -->
+        <div class="grid grid-cols-2 gap-2">
+            <button id="btn-tab-mourn" class="py-2.5 bg-mustard border-2 border-black font-extrabold text-xs brutalist-shadow text-center uppercase">
+                🔥 Cooked Log
+            </button>
+            <button id="btn-tab-earn" class="py-2.5 bg-white border-2 border-black font-extrabold text-xs brutalist-shadow text-center uppercase">
+                🎁 Rewards
+            </button>
+        </div>
+
+        <!-- TAB 1: COOKED CERTIFICATE -->
+        <section id="tab-mourn" class="space-y-4">
+            <div class="bg-white border-2 border-black p-4 brutalist-shadow">
+                <h3 class="font-extrabold text-xs mb-1 uppercase">📝 Log Contract Address or Transaction</h3>
+                <p class="text-[11px] text-neutral-600 mb-3">Paste a dead CA or Tx Hash to generate your Cooked Certificate (+1,000 Points).</p>
+                <input type="text" id="ca-input" placeholder="0x... (Contract Address or Tx Hash)" class="w-full p-2.5 text-xs bg-paper border-2 border-black mb-3 focus:outline-none font-mono">
+                <button id="btn-submit-ca" class="w-full bg-mustard border-2 border-black py-2.5 font-extrabold text-xs uppercase brutalist-shadow hover:bg-yellow-400 transition-all">
+                    Generate Cooked Certificate (+1,000 Points)
+                </button>
+            </div>
+
+            <!-- Cooked Certificate Card -->
+            <div id="tombstone-card-container" class="hidden bg-paper border-4 border-black p-5 brutalist-shadow space-y-3 relative">
+                <div class="absolute top-2 right-2 bg-crimson text-white text-[9px] font-bold px-1.5 py-0.5 border border-black">CERTIFICATE OF ABSOLUTE PAIN</div>
+                <div class="text-center space-y-1 pt-2">
+                    <p class="text-xs font-bold text-neutral-500 uppercase">🔥 OFFICIAL COOKED RECORD 🔥</p>
+                    <h4 id="tomb-target-name" class="text-sm font-extrabold truncate">0x000...000</h4>
+                    <div class="text-4xl my-2">🍳</div>
+                    <p id="tomb-epitaph" class="text-xs italic font-bold text-neutral-900">"Put entire portfolio into a zero-liquidity memecoin."</p>
+                </div>
+                <div class="border-t-2 border-black pt-2.5 flex justify-between text-xs font-bold">
+                    <span>ESTIMATED LOSS: <strong id="tomb-loss-val">0.0000 ETH</strong></span>
+                    <span>STATUS: <strong class="text-crimson">FRIED</strong></span>
+                </div>
+                <button id="btn-download-card" class="w-full bg-black text-white text-xs font-extrabold py-2.5 border border-black uppercase brutalist-shadow-sm">
+                    📋 Copy Certificate Text for X
+                </button>
+            </div>
+
+            <!-- Live Trench Feed -->
+            <div class="bg-white border-2 border-black p-4 brutalist-shadow space-y-3">
+                <div class="flex justify-between items-center mb-1">
+                    <h3 class="font-extrabold text-xs uppercase">Recent Trench Casualties</h3>
+                    <span class="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 border border-black font-bold">LIVE FEED</span>
+                </div>
+                <div id="graveyard-feed" class="space-y-2"></div>
+            </div>
+        </section>
+
+        <!-- TAB 2: REWARDS & X QUESTS -->
+        <section id="tab-earn" class="space-y-4 hidden">
+            <!-- Pool Progress Bar -->
+            <div class="bg-white border-2 border-black p-4 brutalist-shadow">
+                <div class="flex justify-between items-center mb-1">
+                    <h3 class="font-extrabold text-xs uppercase">Fee Distribution Pool (Max 500 Spots)</h3>
+                    <span id="fcfs-slots-badge" class="text-[10px] font-extrabold bg-mint px-1.5 py-0.5 border border-black">500 / 500 LEFT</span>
+                </div>
+                <p class="text-[11px] text-neutral-600 mb-2">Token-gated pool. Must hold COOKED tokens & reach 5,000 PTS to claim.</p>
+                
+                <div class="w-full bg-paper border-2 border-black h-4 mb-2 relative">
+                    <div id="pool-progress-bar" class="bg-mustard h-full transition-all duration-500 border-r-2 border-black" style="width: 0%;"></div>
+                </div>
+                <div class="flex justify-between text-[10px] font-bold">
+                    <span>REVENUE POOL: <strong id="pool-current-eth">0.00 ETH</strong></span>
+                    <span>TARGET: <strong>0.10 ETH</strong></span>
+                </div>
+            </div>
+
+            <!-- Multi-Campaign X Quests (6,000 PTS Max) -->
+            <div class="bg-white border-2 border-black p-4 brutalist-shadow space-y-3">
+                <h3 class="font-extrabold text-xs uppercase">⚔️ X Marketing Quests (Earn Up To 4,500 PTS)</h3>
+                
+                <div class="border-2 border-black p-3 bg-paper">
+                    <div class="flex justify-between items-start mb-1">
+                        <p class="text-xs font-bold">Campaign #1: Pinned Announcement</p>
+                        <span class="bg-mustard text-[9px] px-1.5 py-0.5 border border-black font-bold">+1,500 PTS</span>
+                    </div>
+                    <button class="btn-submit-quest w-full bg-black text-white text-xs font-bold py-1.5 border border-black mt-2" data-quest="1">SUBMIT RAID #1 URL</button>
+                </div>
+
+                <div class="border-2 border-black p-3 bg-paper">
+                    <div class="flex justify-between items-start mb-1">
+                        <p class="text-xs font-bold">Campaign #2: Meme Drop Share</p>
+                        <span class="bg-mustard text-[9px] px-1.5 py-0.5 border border-black font-bold">+1,500 PTS</span>
+                    </div>
+                    <button class="btn-submit-quest w-full bg-black text-white text-xs font-bold py-1.5 border border-black mt-2" data-quest="2">SUBMIT RAID #2 URL</button>
+                </div>
+
+                <div class="border-2 border-black p-3 bg-paper">
+                    <div class="flex justify-between items-start mb-1">
+                        <p class="text-xs font-bold">Campaign #3: Robinhood L2 Alpha</p>
+                        <span class="bg-mustard text-[9px] px-1.5 py-0.5 border border-black font-bold">+1,500 PTS</span>
+                    </div>
+                    <button class="btn-submit-quest w-full bg-black text-white text-xs font-bold py-1.5 border border-black mt-2" data-quest="3">SUBMIT RAID #3 URL</button>
+                </div>
+            </div>
+
+            <!-- Token-Gated Rewards Claim -->
+            <div class="bg-white border-2 border-black p-4 brutalist-shadow">
+                <h3 class="font-extrabold text-xs uppercase mb-1">🎁 Token-Gated Rewards Claim</h3>
+                <p class="text-[11px] text-neutral-600 mb-3">Requires 5,000 PTS and verified COOKED token balance.</p>
+                
+                <div class="border-2 border-black p-3 bg-paper flex flex-col justify-between">
+                    <div class="text-center mb-2">
+                        <div class="font-extrabold text-sm">🪙 Rewards Allocation (FCFS)</div>
+                        <p class="text-[10px] text-neutral-600">5,000 PTS Required</p>
+                    </div>
+                    <button id="btn-fcfs-claim" class="w-full bg-mint text-black text-xs font-extrabold py-2 border-2 border-black brutalist-shadow-sm uppercase">
+                        CLAIM REWARDS ALLOCATION
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

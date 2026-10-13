@@ -1,0 +1,40 @@
+:root {
+    --bg-paper: #FFF6E5;
+    --color-mustard: #FFD93D;
+    --color-crimson: #FF6B6B;
+    --color-mint: #B4F8C8;
+}
+
+body {
+    background-color: var(--bg-paper);
+}
+
+.bg-paper { background-color: var(--bg-paper); }
+.bg-mustard { background-color: var(--color-mustard); }
+.bg-crimson { background-color: var(--color-crimson); }
+.bg-mint { background-color: var(--color-mint); }
+
+.brutalist-shadow {
+    box-shadow: 4px 4px 0px 0px #000000;
+}
+
+.brutalist-shadow-sm {
+    box-shadow: 2px 2px 0px 0px #000000;
+}
+
+.brutalist-shadow:active,
+.brutalist-shadow-sm:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0px 0px 0px 0px #000000;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: var(--bg-paper);
+    border-left: 2px solid #000;
+}
+::-webkit-scrollbar-thumb {
+    background: #000;
+}
