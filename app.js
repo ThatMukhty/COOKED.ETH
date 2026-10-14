@@ -481,4 +481,4 @@ return /^0x[a-fA-F0-9]{40}$/.test(input) || /^0x[a-fA-F0-9]{66}$/.test(input);
     }
 
     renderFeed();
-}};
+});
