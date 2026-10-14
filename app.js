@@ -81,7 +81,7 @@ function closeWalletModal() {
     if (modal) modal.classList.add('hidden');
 }
 
-// CONNECT TO SELECTED WALLET PROVIDER (+500 PTS)
+// ROBUST WALLET CONNECTION & ETHER.JS INITIALIZATION
 async function executeWalletConnect(walletType) {
     closeWalletModal();
     
@@ -94,25 +94,32 @@ async function executeWalletConnect(walletType) {
             rawProvider = window.coinbaseWalletExtension;
         } else if (window.ethereum) {
             rawProvider = window.ethereum;
+        } else if (window.web3 && window.web3.currentProvider) {
+            rawProvider = window.web3.currentProvider;
         }
 
         if (!rawProvider) {
-            alert(`Could not detect ${walletType.toUpperCase()} wallet extension! Make sure your wallet extension is enabled.`);
+            alert(`Could not detect ${walletType.toUpperCase()} browser extension! Please make sure your wallet extension is enabled and unlocked.`);
             return;
         }
 
-        provider = new ethers.providers.Web3Provider(rawProvider);
+        provider = new ethers.providers.Web3Provider(rawProvider, "any");
         await provider.send("eth_requestAccounts", []);
         signer = provider.getSigner();
         const account = await signer.getAddress();
 
-        const message = `COOKED.ETH Verification\n\nConfirming ownership for Rewards Queue.\nAddress: ${account}`;
-        await signer.signMessage(message);
+        // Optional signature to prove ownership
+        try {
+            const message = `COOKED.ETH Verification\n\nConfirming ownership for Rewards Queue.\nAddress: ${account}`;
+            await signer.signMessage(message);
+        } catch (sigErr) {
+            console.warn("Signature declined or skipped:", sigErr);
+        }
 
         if (!ApplicationState.isVerified) {
             ApplicationState.userWallet = account;
             ApplicationState.isVerified = true;
-            ApplicationState.points += 500; // +500 Points for Wallet Verification
+            ApplicationState.points += 500; // +500 PTS for wallet verification
         }
 
         try {
@@ -146,9 +153,9 @@ async function executeWalletConnect(walletType) {
     } catch (err) {
         console.error("Wallet Connection Error:", err);
         if (err.code === 4001) {
-            alert("Connection request was rejected.");
+            alert("Connection request was rejected by user.");
         } else {
-            alert("Failed to connect wallet. Ensure your wallet extension is unlocked.");
+            alert("Failed to connect wallet. Ensure your browser extension is unlocked and active.");
         }
     }
 }
@@ -233,6 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // CERTIFICATE SUBMISSION (0 PTS - ANTI-SYBIL)
     if (btnSubmitCA && inputCA && pointsDisplay && lossDisplay) {
         btnSubmitCA.addEventListener('click', () => {
             const value = inputCA.value.trim();
@@ -247,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             ApplicationState.loggedAddresses.add(value);
-            // Certificate generation awards 0 PTS to prevent sybil farming
+            // 0 PTS added intentionally to prevent farming
             
             const certLoss = ApplicationState.totalLossETH > 0 ? ApplicationState.totalLossETH : 0.0350;
             const shortAddr = `${value.substring(0, 6)}...${value.substring(value.length - 4)}`;
