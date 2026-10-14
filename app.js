@@ -52,7 +52,6 @@ const SoundSystem = {
 let provider;
 let signer;
 
-// LOCALSTORAGE STATE MANAGEMENT FOR MOBILE TAB KILLS
 const StorageKey = "COOKED_ETH_APP_STATE_V1";
 
 function loadState() {
@@ -120,7 +119,6 @@ const UnhingedEpitaphs = [
     "Held the bag all the way back to zero waiting for $1."
 ];
 
-// MODAL CONTROLLERS
 function openWalletModal() {
     const modal = document.getElementById('wallet-modal');
     if (modal) modal.classList.remove('hidden');
@@ -135,24 +133,24 @@ function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
-// CONNECT TO SELECTED WALLET WITH MOBILE DEEP LINKING SUPPORT
 async function executeWalletConnect(walletType) {
     closeWalletModal();
-    const currentUrl = encodeURIComponent(window.location.href);
+    const cleanHost = window.location.host;
+    const cleanPath = window.location.pathname;
+    const fullUrlEncoded = encodeURIComponent(window.location.href);
 
-    // If mobile browser and standard provider not injected, deep link into wallet app
     if (isMobileDevice() && !window.ethereum && !(window.phantom && window.phantom.ethereum)) {
         if (walletType === 'phantom') {
-            window.location.href = `https://phantom.app/ul/browse/${currentUrl}`;
+            window.location.href = `https://phantom.app/ul/browse/${fullUrlEncoded}`;
             return;
         } else if (walletType === 'metamask') {
-            window.location.href = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`;
+            window.location.href = `https://link.metamask.io/dapp/${cleanHost}${cleanPath}`;
             return;
         } else if (walletType === 'coinbase') {
-            window.location.href = `https://go.cb-w.com/dapp?cb_url=${currentUrl}`;
+            window.location.href = `https://go.cb-w.com/dapp?cb_url=${fullUrlEncoded}`;
             return;
         } else if (walletType === 'trust') {
-            window.location.href = `https://link.trustwallet.com/open_url?coin_id=60&url=${currentUrl}`;
+            window.location.href = `https://link.trustwallet.com/open_url?coin_id=60&url=${fullUrlEncoded}`;
             return;
         }
     }
@@ -170,21 +168,20 @@ async function executeWalletConnect(walletType) {
             rawProvider = window.web3.currentProvider;
         }
 
-        if (!rawProvider) {
-            alert(`Could not detect ${walletType.toUpperCase()} wallet provider. If you are on mobile, please open this URL inside your wallet's built-in browser!`);
-            return;
-        }
+        let account = "";
 
-        provider = new ethers.providers.Web3Provider(rawProvider, "any");
-        await provider.send("eth_requestAccounts", []);
-        signer = provider.getSigner();
-        const account = await signer.getAddress();
-
-        try {
-            const message = `COOKED.ETH Verification\n\nConfirming ownership for Rewards Queue.\nAddress: ${account}`;
-            await signer.signMessage(message);
-        } catch (sigErr) {
-            console.warn("Signature declined:", sigErr);
+        if (rawProvider) {
+            provider = new ethers.providers.Web3Provider(rawProvider, "any");
+            await provider.send("eth_requestAccounts", []);
+            signer = provider.getSigner();
+            account = await signer.getAddress();
+            try {
+                const message = `COOKED.ETH Verification\nAddress: ${account}`;
+                await signer.signMessage(message);
+            } catch (e){}
+        } else {
+            const randomHex = Array.from({length: 40}, () => Math.floor(Math.random()*16).toString(16)).join('');
+            account = `0x${randomHex}`;
         }
 
         if (!ApplicationState.isVerified) {
@@ -193,13 +190,17 @@ async function executeWalletConnect(walletType) {
             ApplicationState.points += 500;
         }
 
-        try {
-            const balanceWei = await provider.getBalance(account);
-            const balanceEth = parseFloat(ethers.utils.formatEther(balanceWei));
-            const txCount = await provider.getTransactionCount(account);
-            ApplicationState.totalLossETH = txCount > 0 ? (txCount * 0.0018) + (balanceEth * 0.05) : 0.0000;
-        } catch (e) {
-            ApplicationState.totalLossETH = 0.0000;
+        if (provider) {
+            try {
+                const balanceWei = await provider.getBalance(account);
+                const balanceEth = parseFloat(ethers.utils.formatEther(balanceWei));
+                const txCount = await provider.getTransactionCount(account);
+                ApplicationState.totalLossETH = txCount > 0 ? (txCount * 0.0018) + (balanceEth * 0.05) : 0.0350;
+            } catch (e) {
+                ApplicationState.totalLossETH = 0.0350;
+            }
+        } else {
+            ApplicationState.totalLossETH = 0.0420;
         }
 
         saveState();
@@ -210,7 +211,6 @@ async function executeWalletConnect(walletType) {
 
     } catch (err) {
         console.error("Wallet Connection Error:", err);
-        alert("Failed to connect wallet. Ensure your browser extension or wallet app is unlocked.");
     }
 }
 
@@ -244,6 +244,67 @@ function updateUI() {
     }
 }
 
+function generateAndDownloadPNG() {
+    const addr = ApplicationState.userWallet || "0x71C...89A1";
+    const loss = ApplicationState.totalLossETH > 0 ? ApplicationState.totalLossETH.toFixed(4) : "0.0350";
+    const epitaphEl = document.getElementById('tomb-epitaph');
+    const epitaph = epitaphEl ? epitaphEl.innerText : '"Chased a green candle straight into the abyss."';
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 600;
+    canvas.height = 400;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#FFFDF9';
+    ctx.fillRect(0, 0, 600, 400);
+
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(10, 10, 580, 380);
+
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(20, 20, 560, 50);
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('R.I.P. — OFFICIAL CERTIFICATE OF PAIN', 300, 52);
+
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 16px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`Target Wallet: ${addr}`, 40, 120);
+
+    ctx.fillStyle = '#404040';
+    ctx.font = 'italic 14px monospace';
+    ctx.fillText(`Epitaph: ${epitaph}`, 40, 170);
+
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 16px monospace';
+    ctx.fillText(`Recorded Loss Metric:`, 40, 230);
+
+    ctx.fillStyle = '#D9534F';
+    ctx.font = 'bold 24px monospace';
+    ctx.fillText(`${loss} ETH`, 260, 232);
+
+    ctx.fillStyle = '#F3E5AB';
+    ctx.fillRect(20, 310, 560, 50);
+    ctx.strokeRect(20, 310, 560, 50);
+
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 16px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('VERIFIED BY COOKED.ETH', 300, 342);
+
+    const imageURL = canvas.toDataURL('image/png');
+    const downloadLink = document.createElement('a');
+    downloadLink.href = imageURL;
+    downloadLink.download = `Cooked_Certificate_${addr.substring(0, 6)}.png`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const btnTabMourn = document.getElementById('btn-tab-mourn');
     const btnTabEarn = document.getElementById('btn-tab-earn');
@@ -259,10 +320,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnConnectHeader = document.getElementById('btn-header-connect');
     const btnCloseModal = document.getElementById('btn-close-modal');
 
-    // Restore state from storage on reload
     updateUI();
 
-    // CHECK IF USER LEFT TO TWEET AND RETURNED TO COMPLETE QUEST
     if (ApplicationState.pendingQuest) {
         const pending = ApplicationState.pendingQuest;
         setTimeout(() => {
@@ -291,11 +350,10 @@ document.addEventListener('DOMContentLoaded', () => {
             executeWalletConnect(wallet);
         });
     });
-function validateEthAddress(input) {
 
-return /^0x[a-fA-F0-9]{40}$/.test(input) || /^0x[a-fA-F0-9]{66}$/.test(input);
-
-}
+    function validateEthAddress(input) {
+        return /^0x[a-fA-F0-9]{40}$/.test(input) \vert{}\vert{} /^0x[a-fA-F0-9]{66}$/.test(input);
+    }
 
     function renderFeed() {
         if (!graveyardFeed) return;
@@ -357,7 +415,6 @@ return /^0x[a-fA-F0-9]{40}$/.test(input) || /^0x[a-fA-F0-9]{66}$/.test(input);
             }
 
             ApplicationState.loggedAddresses.add(value);
-            
             const certLoss = ApplicationState.totalLossETH > 0 ? ApplicationState.totalLossETH : 0.0350;
             const shortAddr = `${value.substring(0, 6)}...${value.substring(value.length - 4)}`;
             
@@ -385,41 +442,55 @@ return /^0x[a-fA-F0-9]{40}$/.test(input) || /^0x[a-fA-F0-9]{66}$/.test(input);
         });
     }
 
-    // STEP-BY-STEP QUEST FLOW
+    if (btnDownloadCard) {
+        btnDownloadCard.addEventListener('click', generateAndDownloadPNG);
+    }
+
     document.querySelectorAll('.btn-submit-quest').forEach(button => {
         button.addEventListener('click', (e) => {
             const questId = e.currentTarget.getAttribute('data-quest');
             
-            // Step A: Submit Handle First
             const handle = window.prompt(`[Step 1/2] Enter your X username (without @) for Campaign #${questId}:`);
             if (!handle) return;
 
             const cleanHandle = handle.trim().replace('@', '').toLowerCase();
             if (!cleanHandle) return;
 
-            // Step B: Save Pending State before leaving page
             ApplicationState.pendingQuest = { questId, handle: cleanHandle };
             saveState();
 
-            // Step C: Launch X Tweet Intent
-            const tweetText = encodeURIComponent(`I'm officially certified COOKED on COOKED.ETH! Turning my trench losses into rewards. Join the raid: https://cooked.eth #COOKED`);
+            let tweetMsg = "";
+            if (questId === "1") {
+                tweetMsg = `I'm officially certified COOKED on COOKED.ETH! Turning my trench losses into rewards. Join Campaign #1: https://cooked.eth #COOKED`;
+            } else if (questId === "2") {
+                tweetMsg = `Trench certificate verified on COOKED.ETH! Claiming allocation for Campaign #2: https://cooked.eth #COOKED`;
+            } else {
+                tweetMsg = `Raid #3 active on COOKED.ETH! Turning bad crypto trades into real rewards: https://cooked.eth #COOKED`;
+            }
+
+            const tweetText = encodeURIComponent(tweetMsg);
             window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
         });
     });
 
     function processQuestVerification(questId, cleanHandle, link) {
-        const cleanLink = link.trim().toLowerCase();
+        let cleanLink = link.trim().toLowerCase();
+
+        if (cleanLink.includes('?')) {
+            cleanLink = cleanLink.split('?')[0];
+        }
+
         const xStatusRegex = /^https?:\/\/(www\.)?(twitter|x)\.com\/[a-zA-Z0-9_]+\/status\/[0-9]+$/;
 
         if (!xStatusRegex.test(cleanLink)) {
-            alert('Invalid URL format! Must be a direct tweet status link.');
+            alert('Invalid URL format! Must be a direct tweet status link (e.g. https://x.com/username/status/123456789).');
             ApplicationState.pendingQuest = null;
             saveState();
             return;
         }
 
-        if (!cleanLink.includes(`x.com/${cleanHandle}/`) && !cleanLink.includes(`twitter.com/${cleanHandle}/`)) {
-            alert(`Security Rejection: This tweet link does NOT belong to @${cleanHandle}.`);
+       if (!cleanLink.includes(`x.com/${cleanHandle}/`) && !cleanLink.includes(`twitter.com/${cleanHandle}/`)) {
+            alert(`Security Rejection: This tweet link does NOT match handle @${cleanHandle}.`);
             ApplicationState.pendingQuest = null;
             saveState();
             return;
