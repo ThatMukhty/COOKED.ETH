@@ -3,7 +3,6 @@
 // ==========================================
 const DEPLOYED_COOKED_CA = "0x0000000000000000000000000000000000000000";
 
-// Supabase Configuration Ready for Integration
 const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
 const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 const supabase = (window.supabase && SUPABASE_URL !== "YOUR_SUPABASE_PROJECT_URL") 
@@ -70,7 +69,6 @@ const UnhingedEpitaphs = [
     "Chased a green candle straight into the abyss."
 ];
 
-// MODAL CONTROLLERS
 function openWalletModal() {
     const modal = document.getElementById('wallet-modal');
     if (modal) modal.classList.remove('hidden');
@@ -81,7 +79,6 @@ function closeWalletModal() {
     if (modal) modal.classList.add('hidden');
 }
 
-// ROBUST WALLET CONNECTION & ETHER.JS INITIALIZATION
 async function executeWalletConnect(walletType) {
     closeWalletModal();
     
@@ -99,7 +96,7 @@ async function executeWalletConnect(walletType) {
         }
 
         if (!rawProvider) {
-            alert(`Could not detect ${walletType.toUpperCase()} browser extension! Please make sure your wallet extension is enabled and unlocked.`);
+            alert(`Could not detect ${walletType.toUpperCase()} browser extension! Make sure your wallet extension is enabled.`);
             return;
         }
 
@@ -108,18 +105,17 @@ async function executeWalletConnect(walletType) {
         signer = provider.getSigner();
         const account = await signer.getAddress();
 
-        // Optional signature to prove ownership
         try {
             const message = `COOKED.ETH Verification\n\nConfirming ownership for Rewards Queue.\nAddress: ${account}`;
             await signer.signMessage(message);
         } catch (sigErr) {
-            console.warn("Signature declined or skipped:", sigErr);
+            console.warn("Signature declined:", sigErr);
         }
 
         if (!ApplicationState.isVerified) {
             ApplicationState.userWallet = account;
             ApplicationState.isVerified = true;
-            ApplicationState.points += 500; // +500 PTS for wallet verification
+            ApplicationState.points += 500;
         }
 
         try {
@@ -152,11 +148,7 @@ async function executeWalletConnect(walletType) {
 
     } catch (err) {
         console.error("Wallet Connection Error:", err);
-        if (err.code === 4001) {
-            alert("Connection request was rejected by user.");
-        } else {
-            alert("Failed to connect wallet. Ensure your browser extension is unlocked and active.");
-        }
+        alert("Failed to connect wallet. Ensure your browser extension is unlocked.");
     }
 }
 
@@ -240,7 +232,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // CERTIFICATE SUBMISSION (0 PTS - ANTI-SYBIL)
     if (btnSubmitCA && inputCA && pointsDisplay && lossDisplay) {
         btnSubmitCA.addEventListener('click', () => {
             const value = inputCA.value.trim();
@@ -255,7 +246,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             ApplicationState.loggedAddresses.add(value);
-            // 0 PTS added intentionally to prevent farming
             
             const certLoss = ApplicationState.totalLossETH > 0 ? ApplicationState.totalLossETH : 0.0350;
             const shortAddr = `${value.substring(0, 6)}...${value.substring(value.length - 4)}`;
@@ -291,9 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const certContent = `====================================\n🔥 OFFICIAL COOKED CERTIFICATE OF PAIN 🔥\n====================================\n\nTarget Wallet: ${addr}\nEpitaph: ${epitaph}\nVerified Loss Metric: ${loss} ETH\nStatus: FRIED\n\nIssued by COOKED.ETH\nClaim your share: https://cooked.eth\n====================================`;
 
-            navigator.clipboard.writeText(certContent).then(() => {
-                alert('Certificate text copied to clipboard! Preparing text file download...');
-            }).catch(() => {});
+            navigator.clipboard.writeText(certContent).catch(() => {});
 
             const blob = new Blob([certContent], { type: 'text/plain' });
             const url = window.URL.createObjectURL(blob);
@@ -342,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             ApplicationState.submittedQuestLinks.add(cleanLink);
-            ApplicationState.points += 1500; // +1,500 PTS per quest
+            ApplicationState.points += 1500;
             pointsDisplay.innerText = `${ApplicationState.points.toLocaleString()} PTS`;
             
             SoundSystem.playCoinTone();
@@ -387,7 +375,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
 
     renderFeed();
 });
