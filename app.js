@@ -1,7 +1,14 @@
 // ==========================================
-// CONFIGURATION: DEPLOYED TOKEN CONTRACT (CA)
+// CONFIGURATION: DEPLOYED TOKEN & SUPABASE
 // ==========================================
 const DEPLOYED_COOKED_CA = "0x0000000000000000000000000000000000000000";
+
+// Supabase Configuration Ready for Integration
+const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+const supabase = (window.supabase && SUPABASE_URL !== "YOUR_SUPABASE_PROJECT_URL") 
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) 
+    : null;
 
 const SoundSystem = {
     audioCtx: null,
@@ -47,9 +54,6 @@ const ApplicationState = {
     totalLossETH: 0.0000,
     userWallet: null,
     isVerified: false,
-    poolCurrentETH: 0.015,
-    poolTargetETH: 0.100,
-    fcfsSpotsLeft: 500,
     loggedAddresses: new Set(),
     submittedQuestLinks: new Set(),
     graveyardRecords: [
@@ -77,7 +81,7 @@ function closeWalletModal() {
     if (modal) modal.classList.add('hidden');
 }
 
-// CONNECT TO SELECTED WALLET PROVIDER
+// CONNECT TO SELECTED WALLET PROVIDER (+500 PTS)
 async function executeWalletConnect(walletType) {
     closeWalletModal();
     
@@ -108,7 +112,7 @@ async function executeWalletConnect(walletType) {
         if (!ApplicationState.isVerified) {
             ApplicationState.userWallet = account;
             ApplicationState.isVerified = true;
-            ApplicationState.points += 250;
+            ApplicationState.points += 500; // +500 Points for Wallet Verification
         }
 
         try {
@@ -164,14 +168,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const tombEpitaph = document.getElementById('tomb-epitaph');
     const tombLossVal = document.getElementById('tomb-loss-val');
     const btnDownloadCard = document.getElementById('btn-download-card');
-    const poolProgressBar = document.getElementById('pool-progress-bar');
-    const poolCurrentDisplay = document.getElementById('pool-current-eth');
-    const fcfsSlotsBadge = document.getElementById('fcfs-slots-badge');
     const btnFcfsClaim = document.getElementById('btn-fcfs-claim');
     const btnConnectHeader = document.getElementById('btn-header-connect');
     const btnCloseModal = document.getElementById('btn-close-modal');
 
-    // Attach Wallet Modal Trigger Listeners
     if (btnConnectHeader) btnConnectHeader.addEventListener('click', openWalletModal);
     if (btnCloseModal) btnCloseModal.addEventListener('click', closeWalletModal);
 
@@ -181,16 +181,6 @@ document.addEventListener('DOMContentLoaded', () => {
             executeWalletConnect(wallet);
         });
     });
-
-    function updateProgressBar() {
-        if (poolProgressBar && poolCurrentDisplay && fcfsSlotsBadge) {
-            const percentage = Math.min((ApplicationState.poolCurrentETH / ApplicationState.poolTargetETH) * 100, 100);
-            poolProgressBar.style.width = `${percentage}%`;
-            poolCurrentDisplay.innerText = `${ApplicationState.poolCurrentETH.toFixed(2)} ETH`;
-            fcfsSlotsBadge.innerText = `${ApplicationState.fcfsSpotsLeft} / 500 LEFT`;
-        }
-    }
-    updateProgressBar();
 
     function validateEthAddress(input) {
         return /^0x[a-fA-F0-9]{40}$/.test(input) \vert{}\vert{} /^0x[a-fA-F0-9]{66}$/.test(input);
@@ -257,10 +247,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             ApplicationState.loggedAddresses.add(value);
-            ApplicationState.points += 1000;
+            // Certificate generation awards 0 PTS to prevent sybil farming
+            
             const certLoss = ApplicationState.totalLossETH > 0 ? ApplicationState.totalLossETH : 0.0350;
-
             const shortAddr = `${value.substring(0, 6)}...${value.substring(value.length - 4)}`;
+            
             ApplicationState.graveyardRecords.unshift({
                 address: shortAddr,
                 type: "Logged Trench CA",
@@ -343,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             ApplicationState.submittedQuestLinks.add(cleanLink);
-            ApplicationState.points += 1500;
+            ApplicationState.points += 1500; // +1,500 PTS per quest
             pointsDisplay.innerText = `${ApplicationState.points.toLocaleString()} PTS`;
             
             SoundSystem.playCoinTone();
@@ -363,11 +354,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            if (ApplicationState.fcfsSpotsLeft <= 0) {
-                alert('Rewards Pool is fully exhausted! All 500 spots have been claimed.');
-                return;
-            }
-
             try {
                 if (DEPLOYED_COOKED_CA === "0x0000000000000000000000000000000000000000") {
                     console.warn("CA is set to placeholder. Bypassing live ERC-20 check.");
@@ -382,13 +368,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                ApplicationState.fcfsSpotsLeft--;
                 ApplicationState.points -= 5000;
                 pointsDisplay.innerText = `${ApplicationState.points.toLocaleString()} PTS`;
-                updateProgressBar();
 
                 SoundSystem.playCoinTone();
-                alert(`SUCCESS! Slot secured in Rewards Queue (${ApplicationState.fcfsSpotsLeft} spots remaining).`);
+                alert(`SUCCESS! Slot secured in Rewards Queue.`);
             } catch (err) {
                 console.error(err);
                 alert("Token verification failed.");
