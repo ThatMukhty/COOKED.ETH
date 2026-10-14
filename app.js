@@ -18,57 +18,109 @@ const SoundSystem = {
     },
     playOrganTone() {
         this.init();
-        const osc = this.audioCtx.createOscillator();
-        const gain = this.audioCtx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(130.81, this.audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.25, this.audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 1.0);
-        osc.connect(gain);
-        gain.connect(this.audioCtx.destination);
-        osc.start();
-        osc.stop(this.audioCtx.currentTime + 1.0);
+        try {
+            const osc = this.audioCtx.createOscillator();
+            const gain = this.audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(130.81, this.audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.25, this.audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 1.0);
+            osc.connect(gain);
+            gain.connect(this.audioCtx.destination);
+            osc.start();
+            osc.stop(this.audioCtx.currentTime + 1.0);
+        } catch(e){}
     },
     playCoinTone() {
         this.init();
-        const osc = this.audioCtx.createOscillator();
-        const gain = this.audioCtx.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(987.77, this.audioCtx.currentTime);
-        osc.frequency.setValueAtTime(1318.51, this.audioCtx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.15, this.audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.25);
-        osc.connect(gain);
-        gain.connect(this.audioCtx.destination);
-        osc.start();
-        osc.stop(this.audioCtx.currentTime + 0.25);
+        try {
+            const osc = this.audioCtx.createOscillator();
+            const gain = this.audioCtx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(987.77, this.audioCtx.currentTime);
+            osc.frequency.setValueAtTime(1318.51, this.audioCtx.currentTime + 0.08);
+            gain.gain.setValueAtTime(0.15, this.audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.25);
+            osc.connect(gain);
+            gain.connect(this.audioCtx.destination);
+            osc.start();
+            osc.stop(this.audioCtx.currentTime + 0.25);
+        } catch(e){}
     }
 };
 
 let provider;
 let signer;
 
-const ApplicationState = {
-    points: 0,
-    totalLossETH: 0.0000,
-    userWallet: null,
-    isVerified: false,
-    loggedAddresses: new Set(),
-    submittedQuestLinks: new Set(),
-    graveyardRecords: [
-        { address: "0x71C...89A1", type: "Failed Uniswap Swap", loss: "0.142 ETH", respects: 84 },
-        { address: "0x3A2...91B4", type: "High Gwei Mint", loss: "0.089 ETH", respects: 39 }
-    ]
-};
+// LOCALSTORAGE STATE MANAGEMENT FOR MOBILE TAB KILLS
+const StorageKey = "COOKED_ETH_APP_STATE_V1";
+
+function loadState() {
+    const saved = localStorage.getItem(StorageKey);
+    if (saved) {
+        try {
+            const parsed = JSON.parse(saved);
+            return {
+                points: parsed.points || 0,
+                totalLossETH: parsed.totalLossETH || 0.0000,
+                userWallet: parsed.userWallet || null,
+                isVerified: parsed.isVerified || false,
+                loggedAddresses: new Set(parsed.loggedAddresses || []),
+                submittedQuestLinks: new Set(parsed.submittedQuestLinks || []),
+                pendingQuest: parsed.pendingQuest || null,
+                activeTab: parsed.activeTab || 'mourn',
+                graveyardRecords: parsed.graveyardRecords || [
+                    { address: "0x71C...89A1", type: "Failed Uniswap Swap", loss: "0.142 ETH", respects: 84 },
+                    { address: "0x3A2...91B4", type: "High Gwei Mint", loss: "0.089 ETH", respects: 39 }
+                ]
+            };
+        } catch(e){}
+    }
+    return {
+        points: 0,
+        totalLossETH: 0.0000,
+        userWallet: null,
+        isVerified: false,
+        loggedAddresses: new Set(),
+        submittedQuestLinks: new Set(),
+        pendingQuest: null,
+        activeTab: 'mourn',
+        graveyardRecords: [
+            { address: "0x71C...89A1", type: "Failed Uniswap Swap", loss: "0.142 ETH", respects: 84 },
+            { address: "0x3A2...91B4", type: "High Gwei Mint", loss: "0.089 ETH", respects: 39 }
+        ]
+    };
+}
+
+const ApplicationState = loadState();
+
+function saveState() {
+    const toSave = {
+        points: ApplicationState.points,
+        totalLossETH: ApplicationState.totalLossETH,
+        userWallet: ApplicationState.userWallet,
+        isVerified: ApplicationState.isVerified,
+        loggedAddresses: Array.from(ApplicationState.loggedAddresses),
+        submittedQuestLinks: Array.from(ApplicationState.submittedQuestLinks),
+        pendingQuest: ApplicationState.pendingQuest,
+        activeTab: ApplicationState.activeTab,
+        graveyardRecords: ApplicationState.graveyardRecords
+    };
+    localStorage.setItem(StorageKey, JSON.stringify(toSave));
+}
 
 const UnhingedEpitaphs = [
     "Put entire savings into a zero-liquidity dog memecoin.",
     "Bought the absolute top, panic-sold the bottom.",
     "Trusted a dev with 3 followers and an anime PFP on X.",
     "Slipped on 99% slippage and got completely liquidated.",
-    "Chased a green candle straight into the abyss."
+    "Chased a green candle straight into the abyss.",
+    "Approved a malicious spending limit and got drained.",
+    "Market ordered a presale at 4 AM half-asleep.",
+    "Held the bag all the way back to zero waiting for $1."
 ];
 
+// MODAL CONTROLLERS
 function openWalletModal() {
     const modal = document.getElementById('wallet-modal');
     if (modal) modal.classList.remove('hidden');
@@ -79,8 +131,31 @@ function closeWalletModal() {
     if (modal) modal.classList.add('hidden');
 }
 
+function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+// CONNECT TO SELECTED WALLET WITH MOBILE DEEP LINKING SUPPORT
 async function executeWalletConnect(walletType) {
     closeWalletModal();
+    const currentUrl = encodeURIComponent(window.location.href);
+
+    // If mobile browser and standard provider not injected, deep link into wallet app
+    if (isMobileDevice() && !window.ethereum && !(window.phantom && window.phantom.ethereum)) {
+        if (walletType === 'phantom') {
+            window.location.href = `https://phantom.app/ul/browse/${currentUrl}`;
+            return;
+        } else if (walletType === 'metamask') {
+            window.location.href = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`;
+            return;
+        } else if (walletType === 'coinbase') {
+            window.location.href = `https://go.cb-w.com/dapp?cb_url=${currentUrl}`;
+            return;
+        } else if (walletType === 'trust') {
+            window.location.href = `https://link.trustwallet.com/open_url?coin_id=60&url=${currentUrl}`;
+            return;
+        }
+    }
     
     try {
         let rawProvider = null;
@@ -96,7 +171,7 @@ async function executeWalletConnect(walletType) {
         }
 
         if (!rawProvider) {
-            alert(`Could not detect ${walletType.toUpperCase()} browser extension! Make sure your wallet extension is enabled.`);
+            alert(`Could not detect ${walletType.toUpperCase()} wallet provider. If you are on mobile, please open this URL inside your wallet's built-in browser!`);
             return;
         }
 
@@ -127,41 +202,54 @@ async function executeWalletConnect(walletType) {
             ApplicationState.totalLossETH = 0.0000;
         }
 
-        const pointsDisplay = document.getElementById('user-points');
-        const lossDisplay = document.getElementById('user-total-loss');
-        const walletStatusIndicator = document.getElementById('wallet-status-indicator');
-        const btnHeaderConnect = document.getElementById('btn-header-connect');
-
-        if (walletStatusIndicator) {
-            walletStatusIndicator.innerText = `${account.substring(0, 6)}... (VERIFIED)`;
-            walletStatusIndicator.classList.replace('bg-paper', 'bg-mint');
-        }
-        if (btnHeaderConnect) {
-            btnHeaderConnect.innerText = `${account.substring(0, 6)}...`;
-            btnHeaderConnect.classList.replace('bg-mustard', 'bg-mint');
-        }
-        if (pointsDisplay) pointsDisplay.innerText = `${ApplicationState.points.toLocaleString()} PTS`;
-        if (lossDisplay) lossDisplay.innerText = `${ApplicationState.totalLossETH.toFixed(4)} ETH`;
+        saveState();
+        updateUI();
 
         SoundSystem.playCoinTone();
         alert(`Successfully connected via ${walletType.toUpperCase()}! +500 Points added.`);
 
     } catch (err) {
         console.error("Wallet Connection Error:", err);
-        alert("Failed to connect wallet. Ensure your browser extension is unlocked.");
+        alert("Failed to connect wallet. Ensure your browser extension or wallet app is unlocked.");
+    }
+}
+
+function updateUI() {
+    const pointsDisplay = document.getElementById('user-points');
+    const lossDisplay = document.getElementById('user-total-loss');
+    const btnHeaderConnect = document.getElementById('btn-header-connect');
+    const tabMourn = document.getElementById('tab-mourn');
+    const tabEarn = document.getElementById('tab-earn');
+    const btnTabMourn = document.getElementById('btn-tab-mourn');
+    const btnTabEarn = document.getElementById('btn-tab-earn');
+
+    if (pointsDisplay) pointsDisplay.innerText = `${ApplicationState.points.toLocaleString()} PTS`;
+    if (lossDisplay) lossDisplay.innerText = `${ApplicationState.totalLossETH.toFixed(4)} ETH`;
+
+    if (btnHeaderConnect && ApplicationState.userWallet) {
+        btnHeaderConnect.innerText = `${ApplicationState.userWallet.substring(0, 6)}...`;
+        btnHeaderConnect.classList.replace('bg-mustard', 'bg-mint');
+    }
+
+    if (ApplicationState.activeTab === 'earn') {
+        if (tabEarn) tabEarn.classList.remove('hidden');
+        if (tabMourn) tabMourn.classList.add('hidden');
+        if (btnTabEarn) btnTabEarn.classList.replace('bg-white', 'bg-mustard');
+        if (btnTabMourn) btnTabMourn.classList.replace('bg-mustard', 'bg-white');
+    } else {
+        if (tabMourn) tabMourn.classList.remove('hidden');
+        if (tabEarn) tabEarn.classList.add('hidden');
+        if (btnTabMourn) btnTabMourn.classList.replace('bg-white', 'bg-mustard');
+        if (btnTabEarn) btnTabEarn.classList.replace('bg-mustard', 'bg-white');
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     const btnTabMourn = document.getElementById('btn-tab-mourn');
     const btnTabEarn = document.getElementById('btn-tab-earn');
-    const tabMourn = document.getElementById('tab-mourn');
-    const tabEarn = document.getElementById('tab-earn');
     const btnSubmitCA = document.getElementById('btn-submit-ca');
     const inputCA = document.getElementById('ca-input');
     const graveyardFeed = document.getElementById('graveyard-feed');
-    const pointsDisplay = document.getElementById('user-points');
-    const lossDisplay = document.getElementById('user-total-loss');
     const tombstoneContainer = document.getElementById('tombstone-card-container');
     const tombTargetName = document.getElementById('tomb-target-name');
     const tombEpitaph = document.getElementById('tomb-epitaph');
@@ -170,6 +258,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnFcfsClaim = document.getElementById('btn-fcfs-claim');
     const btnConnectHeader = document.getElementById('btn-header-connect');
     const btnCloseModal = document.getElementById('btn-close-modal');
+
+    // Restore state from storage on reload
+    updateUI();
+
+    // CHECK IF USER LEFT TO TWEET AND RETURNED TO COMPLETE QUEST
+    if (ApplicationState.pendingQuest) {
+        const pending = ApplicationState.pendingQuest;
+        setTimeout(() => {
+            const complete = confirm(`Welcome back! Complete Campaign #${pending.questId} for @${pending.handle}? Click OK to enter your tweet link.`);
+            if (complete) {
+                const link = window.prompt(`Paste your direct X post URL for Campaign #${pending.questId}:`);
+                if (link) {
+                    processQuestVerification(pending.questId, pending.handle, link);
+                } else {
+                    ApplicationState.pendingQuest = null;
+                    saveState();
+                }
+            } else {
+                ApplicationState.pendingQuest = null;
+                saveState();
+            }
+        }, 500);
+    }
 
     if (btnConnectHeader) btnConnectHeader.addEventListener('click', openWalletModal);
     if (btnCloseModal) btnCloseModal.addEventListener('click', closeWalletModal);
@@ -181,8 +292,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-   function validateEthAddress(input) {
-        return /^0x[a-fA-F0-9]{40}$/.test(input) || /^0x[a-fA-F0-9]{66}$/.test(input);
+    function validateEthAddress(input) {
+        return /^0x[a-fA-F0-9]{40}$/.test(input) \vert{}\vert{} /^0x[a-fA-F0-9]{66}$/.test(input);
     }
 
     function renderFeed() {
@@ -209,6 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const idx = target.getAttribute('data-index');
                 if (idx !== null) {
                     ApplicationState.graveyardRecords[parseInt(idx, 10)].respects++;
+                    saveState();
                     SoundSystem.playOrganTone();
                     renderFeed();
                 }
@@ -216,23 +328,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (btnTabMourn && btnTabEarn && tabMourn && tabEarn) {
+    if (btnTabMourn && btnTabEarn) {
         btnTabMourn.addEventListener('click', () => {
-            tabMourn.classList.remove('hidden');
-            tabEarn.classList.add('hidden');
-            btnTabMourn.classList.replace('bg-white', 'bg-mustard');
-            btnTabEarn.classList.replace('bg-mustard', 'bg-white');
+            ApplicationState.activeTab = 'mourn';
+            saveState();
+            updateUI();
         });
 
         btnTabEarn.addEventListener('click', () => {
-            tabEarn.classList.remove('hidden');
-            tabMourn.classList.add('hidden');
-            btnTabEarn.classList.replace('bg-white', 'bg-mustard');
-            btnTabEarn.classList.replace('bg-mustard', 'bg-white');
+            ApplicationState.activeTab = 'earn';
+            saveState();
+            updateUI();
         });
     }
 
-    if (btnSubmitCA && inputCA && pointsDisplay && lossDisplay) {
+    if (btnSubmitCA && inputCA) {
         btnSubmitCA.addEventListener('click', () => {
             const value = inputCA.value.trim();
             if (!validateEthAddress(value)) {
@@ -257,7 +367,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 respects: 1
             });
 
-            pointsDisplay.innerText = `${ApplicationState.points.toLocaleString()} PTS`;
+            saveState();
+            updateUI();
             
             if (tombstoneContainer && tombTargetName && tombEpitaph && tombLossVal) {
                 tombTargetName.innerText = ApplicationState.userWallet || shortAddr;
@@ -273,70 +384,63 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (btnDownloadCard) {
-        btnDownloadCard.addEventListener('click', () => {
-            const addr = ApplicationState.userWallet || "0x0000...0000";
-            const loss = ApplicationState.totalLossETH > 0 ? ApplicationState.totalLossETH.toFixed(4) : "0.0350";
-            const epitaph = document.getElementById('tomb-epitaph') ? document.getElementById('tomb-epitaph').innerText : "";
-
-            const certContent = `====================================\n🔥 OFFICIAL COOKED CERTIFICATE OF PAIN 🔥\n====================================\n\nTarget Wallet: ${addr}\nEpitaph: ${epitaph}\nVerified Loss Metric: ${loss} ETH\nStatus: FRIED\n\nIssued by COOKED.ETH\nClaim your share: https://cooked.eth\n====================================`;
-
-            navigator.clipboard.writeText(certContent).catch(() => {});
-
-            const blob = new Blob([certContent], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Cooked_Certificate_${addr.substring(0, 6)}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        });
-    }
-
+    // STEP-BY-STEP QUEST FLOW
     document.querySelectorAll('.btn-submit-quest').forEach(button => {
         button.addEventListener('click', (e) => {
             const questId = e.currentTarget.getAttribute('data-quest');
             
-            const tweetText = encodeURIComponent(`I'm officially certified COOKED on COOKED.ETH! Turning my trench losses into rewards. Join the raid: https://cooked.eth #COOKED`);
-            window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
-
-            const handle = window.prompt('Enter your X username (without @):');
+            // Step A: Submit Handle First
+            const handle = window.prompt(`[Step 1/2] Enter your X username (without @) for Campaign #${questId}:`);
             if (!handle) return;
 
             const cleanHandle = handle.trim().replace('@', '').toLowerCase();
             if (!cleanHandle) return;
 
-            const link = window.prompt(`Paste your direct X post URL for Campaign #${questId}:`);
-            if (!link) return;
+            // Step B: Save Pending State before leaving page
+            ApplicationState.pendingQuest = { questId, handle: cleanHandle };
+            saveState();
 
-            const cleanLink = link.trim().toLowerCase();
-            const xStatusRegex = /^https?:\/\/(www\.)?(twitter|x)\.com\/[a-zA-Z0-9_]+\/status\/[0-9]+$/;
-
-            if (!xStatusRegex.test(cleanLink)) {
-                alert('Invalid URL format! Must be a direct tweet status link.');
-                return;
-            }
-
-            if (!cleanLink.includes(`x.com/${cleanHandle}/`) && !cleanLink.includes(`twitter.com/${cleanHandle}/`)) {
-                alert(`Security Rejection: This tweet link does NOT belong to @${cleanHandle}.`);
-                return;
-            }
-
-            if (ApplicationState.submittedQuestLinks.has(cleanLink)) {
-                alert('Error: This exact tweet URL has already been claimed.');
-                return;
-            }
-
-            ApplicationState.submittedQuestLinks.add(cleanLink);
-            ApplicationState.points += 1500;
-            pointsDisplay.innerText = `${ApplicationState.points.toLocaleString()} PTS`;
-            
-            SoundSystem.playCoinTone();
-            alert(`Verified Campaign #${questId} for @${cleanHandle}! +1,500 Points Added.`);
+            // Step C: Launch X Tweet Intent
+            const tweetText = encodeURIComponent(`I'm officially certified COOKED on COOKED.ETH! Turning my trench losses into rewards. Join the raid: https://cooked.eth #COOKED`);
+            window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
         });
     });
+
+    function processQuestVerification(questId, cleanHandle, link) {
+        const cleanLink = link.trim().toLowerCase();
+        const xStatusRegex = /^https?:\/\/(www\.)?(twitter|x)\.com\/[a-zA-Z0-9_]+\/status\/[0-9]+$/;
+
+        if (!xStatusRegex.test(cleanLink)) {
+            alert('Invalid URL format! Must be a direct tweet status link.');
+            ApplicationState.pendingQuest = null;
+            saveState();
+            return;
+        }
+
+        if (!cleanLink.includes(`x.com/${cleanHandle}/`) && !cleanLink.includes(`twitter.com/${cleanHandle}/`)) {
+            alert(`Security Rejection: This tweet link does NOT belong to @${cleanHandle}.`);
+            ApplicationState.pendingQuest = null;
+            saveState();
+            return;
+        }
+
+        if (ApplicationState.submittedQuestLinks.has(cleanLink)) {
+            alert('Error: This exact tweet URL has already been claimed.');
+            ApplicationState.pendingQuest = null;
+            saveState();
+            return;
+        }
+
+        ApplicationState.submittedQuestLinks.add(cleanLink);
+        ApplicationState.points += 1500;
+        ApplicationState.pendingQuest = null;
+        
+        saveState();
+        updateUI();
+        
+        SoundSystem.playCoinTone();
+        alert(`Verified Campaign #${questId} for @${cleanHandle}! +1,500 Points Added.`);
+    }
 
     if (btnFcfsClaim) {
         btnFcfsClaim.addEventListener('click', async () => {
@@ -351,9 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
-                if (DEPLOYED_COOKED_CA === "0x0000000000000000000000000000000000000000") {
-                    console.warn("CA is set to placeholder. Bypassing live ERC-20 check.");
-                } else {
+                if (DEPLOYED_COOKED_CA !== "0x0000000000000000000000000000000000000000" && provider) {
                     const minABI = ["function balanceOf(address owner) view returns (uint256)"];
                     const tokenContract = new ethers.Contract(DEPLOYED_COOKED_CA, minABI, provider);
                     const balance = await tokenContract.balanceOf(ApplicationState.userWallet);
@@ -365,7 +467,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 ApplicationState.points -= 5000;
-                pointsDisplay.innerText = `${ApplicationState.points.toLocaleString()} PTS`;
+                saveState();
+                updateUI();
 
                 SoundSystem.playCoinTone();
                 alert(`SUCCESS! Slot secured in Rewards Queue.`);
@@ -377,4 +480,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     renderFeed();
-});
+}};

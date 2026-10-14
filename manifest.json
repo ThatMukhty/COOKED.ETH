@@ -1,0 +1,16 @@
+{
+  "name": "COOKED.ETH",
+  "short_name": "COOKED",
+  "description": "Neo-Brutalist Crypto Rewards & Trench Memorial",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFDF9",
+  "theme_color": "#F3E5AB",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/1f525.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
