@@ -352,9 +352,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function validateEthAddress(input) {
-        return /^0x[a-fA-F0-9]{40}$/.test(input) \vert{}\vert{} /^0x[a-fA-F0-9]{66}$/.test(input);
+        return /^0x[a-fA-F0-9]{40}$/.test(input) || /^0x[a-fA-F0-9]{66}$/.test(input);
     }
-
     function renderFeed() {
         if (!graveyardFeed) return;
         graveyardFeed.innerHTML = '';
