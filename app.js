@@ -108,7 +108,7 @@ async function executeWalletConnect(walletType) {
         if (!ApplicationState.isVerified) {
             ApplicationState.userWallet = account;
             ApplicationState.isVerified = true;
-            ApplicationState.points += 500;
+            ApplicationState.points += 250;
         }
 
         try {
