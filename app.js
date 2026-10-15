@@ -305,8 +305,25 @@ function generateAndDownloadPNG() {
     downloadLink.click();
     document.body.removeChild(downloadLink);
 }
+document.addEventListener('DOMContentLoaded', async () => {
+    // AUTO-CONNECT CHECK FOR ALL INJECTED IN-APP BROWSERS
+    if (!ApplicationState.userWallet) {
+        const injected = window.ethereum || (window.phantom && window.phantom.ethereum) || (window.coinbaseWalletExtension);
+        if (injected) {
+            try {
+                const accounts = await injected.request({ method: 'eth_accounts' });
+                if (accounts && accounts.length > 0) {
+                    ApplicationState.userWallet = accounts[0];
+                    ApplicationState.isVerified = true;
+                    if (ApplicationState.points < 500) ApplicationState.points += 500;
+                    saveState();
+                }
+            } catch (e) {
+                console.warn("Auto-connect check skipped:", e);
+            }
+        }
+    }
 
-document.addEventListener('DOMContentLoaded', () => {
     const btnTabMourn = document.getElementById('btn-tab-mourn');
     const btnTabEarn = document.getElementById('btn-tab-earn');
     const btnSubmitCA = document.getElementById('btn-submit-ca');
