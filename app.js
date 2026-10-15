@@ -306,9 +306,21 @@ function generateAndDownloadPNG() {
     document.body.removeChild(downloadLink);
 }
 document.addEventListener('DOMContentLoaded', async () => {
-    // AUTO-CONNECT CHECK FOR ALL INJECTED IN-APP BROWSERS
-    if (!ApplicationState.userWallet) {
-        const injected = window.ethereum || (window.phantom && window.phantom.ethereum) || (window.coinbaseWalletExtension);
+    // AUTO-CONNECT & PROVIDER INJECTION WAIT-CHECK FOR MOBILE BROWSERS
+    const checkInjectedWallet = async () => {
+        if (ApplicationState.userWallet) return;
+        
+        let injected = window.ethereum || (window.phantom && window.phantom.ethereum) || window.coinbaseWalletExtension;
+        
+        // Wait up to 1 second for mobile wallet providers to inject their window objects
+        if (!injected) {
+            for (let i = 0; i < 10; i++) {
+                await new Promise(r => setTimeout(r, 100));
+                injected = window.ethereum || (window.phantom && window.phantom.ethereum) || window.coinbaseWalletExtension;
+                if (injected) break;
+            }
+        }
+
         if (injected) {
             try {
                 const accounts = await injected.request({ method: 'eth_accounts' });
@@ -317,12 +329,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                     ApplicationState.isVerified = true;
                     if (ApplicationState.points < 500) ApplicationState.points += 500;
                     saveState();
+                    updateUI();
                 }
             } catch (e) {
-                console.warn("Auto-connect check skipped:", e);
+                console.warn("Auto-connect fetch failed:", e);
             }
         }
-    }
+    };
+
+    checkInjectedWallet();
 
     const btnTabMourn = document.getElementById('btn-tab-mourn');
     const btnTabEarn = document.getElementById('btn-tab-earn');
@@ -358,8 +373,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }, 500);
     }
-
-    if (btnConnectHeader) btnConnectHeader.addEventListener('click', openWalletModal);
+if (btnConnectHeader) {
+    btnConnectHeader.addEventListener('click', () => {
+        const injected = window.ethereum || (window.phantom && window.phantom.ethereum);
+        if (injected && isMobileDevice()) {
+            executeWalletConnect('phantom');
+        } else {
+            openWalletModal();
+        }
+    });
+}
     if (btnCloseModal) btnCloseModal.addEventListener('click', closeWalletModal);
 
     document.querySelectorAll('.btn-wallet-option').forEach(btn => {
