@@ -592,6 +592,6 @@ if (btnConnectHeader) {
                 console.error(err);
                 alert("Token verification failed.");
             }
-        });
+      
    renderFeed();
 });
