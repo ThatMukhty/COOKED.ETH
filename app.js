@@ -501,12 +501,24 @@ const questModalInput = document.getElementById('quest-modal-input');
 const questModalSubmit = document.getElementById('quest-modal-submit');
 const questModalCancel = document.getElementById('quest-modal-cancel');
 
-
 document.querySelectorAll('.btn-submit-quest').forEach(button => {
     button.addEventListener('click', (e) => {
         activeQuestId = e.currentTarget.getAttribute('data-quest');
+        
+        // 1. Automatically open Twitter Intent so you can tweet
+        let tweetMsg = "";
+        if (activeQuestId === "1") {
+            tweetMsg = `I'm officially certified COOKED on COOKED.ETH! Turning my trench losses into rewards. Join Campaign #1: https://cooked.eth #COOKED`;
+        } else if (activeQuestId === "2") {
+            tweetMsg = `Trench certificate verified on COOKED.ETH! Claiming allocation for Campaign #2: https://cooked.eth #COOKED`;
+        } else {
+            tweetMsg = `Raid #3 active on COOKED.ETH! Turning bad crypto trades into real rewards: https://cooked.eth #COOKED`;
+        }
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetMsg)}`, '_blank');
+
+        // 2. Open the modal to accept the URL
         if (questModalTitle) questModalTitle.innerText = `CAMPAIGN #${activeQuestId} SUBMISSION`;
-        if (questModalDesc) questModalDesc.innerText = `Paste your direct X post URL below to claim reward:`;
+        if (questModalDesc) questModalDesc.innerText = `Tweet window opened! Post on X, then paste your direct X post URL below:`;
         if (questModalInput) {
             questModalInput.value = '';
             questModalInput.placeholder = 'https://x.com/YourName/status/...';
