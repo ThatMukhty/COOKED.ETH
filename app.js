@@ -571,8 +571,7 @@ let activeQuestId = null;
                     alert('Invalid URL format! Must be a direct tweet status link.');
                     return;
                 }
-
-                if (!cleanLink.includes(`x.com/${pending.handle}/`) && !cleanLink.includes(`twitter.com/${pending.handle}/`)) {
+if (!cleanLink.includes(`x.com/${pending.handle.toLowerCase()}/`) && !cleanLink.includes(`twitter.com/${pending.handle.toLowerCase()}/`)) {
                     alert(`Security Rejection: This tweet link does NOT match @${pending.handle}.`);
                     return;
                 }
