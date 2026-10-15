@@ -491,74 +491,111 @@ if (btnConnectHeader) {
     if (btnDownloadCard) {
         btnDownloadCard.addEventListener('click', generateAndDownloadPNG);
     }
+let activeQuestId = null;
+    let questFlowStep = 'handle';
+
+    const questModal = document.getElementById('quest-modal');
+    const questModalTitle = document.getElementById('quest-modal-title');
+    const questModalDesc = document.getElementById('quest-modal-desc');
+    const questModalInput = document.getElementById('quest-modal-input');
+    const questModalSubmit = document.getElementById('quest-modal-submit');
+    const questModalCancel = document.getElementById('quest-modal-cancel');
 
     document.querySelectorAll('.btn-submit-quest').forEach(button => {
         button.addEventListener('click', (e) => {
-            const questId = e.currentTarget.getAttribute('data-quest');
+            activeQuestId = e.currentTarget.getAttribute('data-quest');
+            questFlowStep = 'handle';
             
-            const handle = window.prompt(`[Step 1/2] Enter your X username (without @) for Campaign #${questId}:`);
-            if (!handle) return;
-
-            const cleanHandle = handle.trim().replace('@', '').toLowerCase();
-            if (!cleanHandle) return;
-
-            ApplicationState.pendingQuest = { questId, handle: cleanHandle };
-            saveState();
-
-            let tweetMsg = "";
-            if (questId === "1") {
-                tweetMsg = `I'm officially certified COOKED on COOKED.ETH! Turning my trench losses into rewards. Join Campaign #1: https://cooked.eth #COOKED`;
-            } else if (questId === "2") {
-                tweetMsg = `Trench certificate verified on COOKED.ETH! Claiming allocation for Campaign #2: https://cooked.eth #COOKED`;
-            } else {
-                tweetMsg = `Raid #3 active on COOKED.ETH! Turning bad crypto trades into real rewards: https://cooked.eth #COOKED`;
+            if (questModalTitle) questModalTitle.innerText = `CAMPAIGN #${activeQuestId} (STEP 1/2)`;
+            if (questModalDesc) questModalDesc.innerText = `Enter your X username (without @) to open the tweet intent:`;
+            if (questModalInput) {
+                questModalInput.value = '';
+                questModalInput.placeholder = 'e.g. cryptodegen';
             }
-
-            const tweetText = encodeURIComponent(tweetMsg);
-            window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
+            if (questModal) questModal.classList.remove('hidden');
         });
     });
 
-    function processQuestVerification(questId, cleanHandle, link) {
-        let cleanLink = link.trim().toLowerCase();
-
-        if (cleanLink.includes('?')) {
-            cleanLink = cleanLink.split('?')[0];
-        }
-
-        const xStatusRegex = /^https?:\/\/(www\.)?(twitter|x)\.com\/[a-zA-Z0-9_]+\/status\/[0-9]+$/;
-
-        if (!xStatusRegex.test(cleanLink)) {
-            alert('Invalid URL format! Must be a direct tweet status link (e.g. https://x.com/username/status/123456789).');
+    if (questModalCancel) {
+        questModalCancel.addEventListener('click', () => {
+            if (questModal) questModal.classList.add('hidden');
             ApplicationState.pendingQuest = null;
             saveState();
-            return;
-        }
-
-       if (!cleanLink.includes(`x.com/${cleanHandle}/`) && !cleanLink.includes(`twitter.com/${cleanHandle}/`)) {
-            alert(`Security Rejection: This tweet link does NOT match handle @${cleanHandle}.`);
-            ApplicationState.pendingQuest = null;
-            saveState();
-            return;
-        }
-
-        if (ApplicationState.submittedQuestLinks.has(cleanLink)) {
-            alert('Error: This exact tweet URL has already been claimed.');
-            ApplicationState.pendingQuest = null;
-            saveState();
-            return;
-        }
-
-        ApplicationState.submittedQuestLinks.add(cleanLink);
-        ApplicationState.points += 1500;
-        ApplicationState.pendingQuest = null;
-        
-        saveState();
-        updateUI();
-        
-        SoundSystem.playCoinTone();
-        alert(`Verified Campaign #${questId} for @${cleanHandle}! +1,500 Points Added.`);
+        });
     }
+
+    if (questModalSubmit && questModalInput) {
+        questModalSubmit.addEventListener('click', () => {
+            const val = questModalInput.value.trim();
+            if (!val) return;
+
+            if (questFlowStep === 'handle') {
+                const cleanHandle = val.replace('@', '').toLowerCase();
+                ApplicationState.pendingQuest = { questId: activeQuestId, handle: cleanHandle };
+                saveState();
+
+                if (questModal) questModal.classList.add('hidden');
+
+                let tweetMsg = "";
+                if (activeQuestId === "1") {
+                    tweetMsg = `I'm officially certified COOKED on COOKED.ETH! Turning my trench losses into rewards. Join Campaign #1: https://cooked.eth #COOKED`;
+                } else if (activeQuestId === "2") {
+                    tweetMsg = `Trench certificate verified on COOKED.ETH! Claiming allocation for Campaign #2: https://cooked.eth #COOKED`;
+                } else {
+                    tweetMsg = `Raid #3 active on COOKED.ETH! Turning bad crypto trades into real rewards: https://cooked.eth #COOKED`;
+                }
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetMsg)}`, '_blank');
+
+                setTimeout(() => {
+                    questFlowStep = 'url';
+                    if (questModalTitle) questModalTitle.innerText = `CAMPAIGN #${activeQuestId} (STEP 2/2)`;
+                    if (questModalDesc) questModalDesc.innerText = `Paste your direct X post URL for @${cleanHandle}:`;
+                    questModalInput.value = '';
+                    questModalInput.placeholder = 'https://x.com/.../status/...';
+                    if (questModal) questModal.classList.remove('hidden');
+                }, 1000);
+
+            } else if (questFlowStep === 'url') {
+                const pending = ApplicationState.pendingQuest;
+                if (!pending) {
+                    if (questModal) questModal.classList.add('hidden');
+                    return;
+                }
+                
+                let cleanLink = val.toLowerCase();
+                if (cleanLink.includes('?')) cleanLink = cleanLink.split('?')[0];
+
+                const xStatusRegex = /^https?:\/\/(www\.)?(twitter|x)\.com\/[a-zA-Z0-9_]+\/status\/[0-9]+$/;
+
+                if (!xStatusRegex.test(cleanLink)) {
+                    alert('Invalid URL format! Must be a direct tweet status link.');
+                    return;
+                }
+
+                if (!cleanLink.includes(`x.com/${pending.handle}/`) && !cleanLink.includes(`twitter.com/${pending.handle}/`)) {
+                    alert(`Security Rejection: This tweet link does NOT match @${pending.handle}.`);
+                    return;
+                }
+
+                if (ApplicationState.submittedQuestLinks.has(cleanLink)) {
+                    alert('Error: This exact tweet URL has already been claimed.');
+                    return;
+                }
+
+                ApplicationState.submittedQuestLinks.add(cleanLink);
+                ApplicationState.points += 1500;
+                ApplicationState.pendingQuest = null;
+                
+                saveState();
+                updateUI();
+                if (questModal) questModal.classList.add('hidden');
+                
+                SoundSystem.playCoinTone();
+                alert(`Verified Campaign #${activeQuestId} for @${pending.handle}! +1,500 Points Added.`);
+            }
+        });
+    }
+    
 
     if (btnFcfsClaim) {
         btnFcfsClaim.addEventListener('click', async () => {

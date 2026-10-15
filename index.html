@@ -193,6 +193,19 @@
 
     </main>
 
+<!-- X Quest Submission Modal -->
+    <div id="quest-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-paper border-4 border-black p-6 w-full max-w-md brutalist-shadow">
+            <h3 id="quest-modal-title" class="font-bold text-lg mb-2">COMPLETE X CAMPAIGN</h3>
+            <p id="quest-modal-desc" class="text-xs text-neutral-600 mb-4">Enter your details below to verify your quest.</p>
+            <input type="text" id="quest-modal-input" placeholder="Enter X username or Tweet URL..." class="w-full border-2 border-black p-2 text-sm mb-4 bg-white font-mono">
+            <div class="flex gap-2">
+                <button id="quest-modal-submit" class="flex-1 bg-black text-white py-2 font-bold border-2 border-black">SUBMIT</button>
+                <button id="quest-modal-cancel" class="flex-1 bg-white text-black py-2 font-bold border-2 border-black">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>
