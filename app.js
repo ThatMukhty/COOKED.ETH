@@ -306,24 +306,30 @@ function generateAndDownloadPNG() {
     document.body.removeChild(downloadLink);
 }
 document.addEventListener('DOMContentLoaded', async () => {
-    // AUTO-CONNECT & PROVIDER INJECTION WAIT-CHECK FOR MOBILE BROWSERS
+  
+// AUTO-CONNECT & PROVIDER INJECTION WAIT-CHECK FOR MOBILE BROWSERS
     const checkInjectedWallet = async () => {
         if (ApplicationState.userWallet) return;
         
         let injected = window.ethereum || (window.phantom && window.phantom.ethereum) || window.coinbaseWalletExtension;
         
-        // Wait up to 1 second for mobile wallet providers to inject their window objects
         if (!injected) {
-            for (let i = 0; i < 10; i++) {
+            for (let i = 0; i < 15; i++) {
                 await new Promise(r => setTimeout(r, 100));
                 injected = window.ethereum || (window.phantom && window.phantom.ethereum) || window.coinbaseWalletExtension;
                 if (injected) break;
             }
         }
 
-        if (injected) {
+        if (injected && isMobileDevice()) {
             try {
-                const accounts = await injected.request({ method: 'eth_accounts' });
+                // Try silent accounts fetch first
+                let accounts = await injected.request({ method: 'eth_accounts' });
+                if (!accounts || accounts.length === 0) {
+                    // If not pre-approved, prompt the connection immediately on mobile load
+                    accounts = await injected.request({ method: 'eth_requestAccounts' });
+                }
+                
                 if (accounts && accounts.length > 0) {
                     ApplicationState.userWallet = accounts[0];
                     ApplicationState.isVerified = true;
@@ -332,7 +338,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     updateUI();
                 }
             } catch (e) {
-                console.warn("Auto-connect fetch failed:", e);
+                console.warn("Mobile auto-connect prompt skipped/failed:", e);
             }
         }
     };
