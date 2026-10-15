@@ -490,9 +490,7 @@ if (btnConnectHeader) {
 
     if (btnDownloadCard) {
         btnDownloadCard.addEventListener('click', generateAndDownloadPNG);
-    }
-let activeQuestId = null;
-    let questFlowStep = 'handle';
+ let activeQuestId = null;
 
     const questModal = document.getElementById('quest-modal');
     const questModalTitle = document.getElementById('quest-modal-title');
@@ -504,13 +502,12 @@ let activeQuestId = null;
     document.querySelectorAll('.btn-submit-quest').forEach(button => {
         button.addEventListener('click', (e) => {
             activeQuestId = e.currentTarget.getAttribute('data-quest');
-            questFlowStep = 'handle';
             
-            if (questModalTitle) questModalTitle.innerText = `CAMPAIGN #${activeQuestId} (STEP 1/2)`;
-            if (questModalDesc) questModalDesc.innerText = `Enter your X username (without @) to open the tweet intent:`;
+            if (questModalTitle) questModalTitle.innerText = `CAMPAIGN #${activeQuestId} SUBMISSION`;
+            if (questModalDesc) questModalDesc.innerText = `Paste your direct X post URL below to claim reward:`;
             if (questModalInput) {
                 questModalInput.value = '';
-                questModalInput.placeholder = 'e.g. cryptodegen';
+                questModalInput.placeholder = 'https://x.com/YourName/status/...';
             }
             if (questModal) questModal.classList.remove('hidden');
         });
@@ -519,8 +516,6 @@ let activeQuestId = null;
     if (questModalCancel) {
         questModalCancel.addEventListener('click', () => {
             if (questModal) questModal.classList.add('hidden');
-            ApplicationState.pendingQuest = null;
-            saveState();
         });
     }
 
@@ -529,93 +524,46 @@ let activeQuestId = null;
             const val = questModalInput.value.trim();
             if (!val) return;
 
-            if (questFlowStep === 'handle') {
-                const cleanHandle = val.replace('@', '').toLowerCase();
-                ApplicationState.pendingQuest = { questId: activeQuestId, handle: cleanHandle };
-                saveState();
+            let cleanLink = val.toLowerCase();
+            if (cleanLink.includes('?')) cleanLink = cleanLink.split('?')[0];
 
-                if (questModal) questModal.classList.add('hidden');
+            const xStatusRegex = /^https?:\/\/(www\.)?(twitter|x)\.com\/([a-zA-Z0-9_]+)\/status\/([0-9]+)$/;
+            const match = val.match(xStatusRegex);
 
-                let tweetMsg = "";
-                if (activeQuestId === "1") {
-                    tweetMsg = `I'm officially certified COOKED on COOKED.ETH! Turning my trench losses into rewards. Join Campaign #1: https://cooked.eth #COOKED`;
-                } else if (activeQuestId === "2") {
-                    tweetMsg = `Trench certificate verified on COOKED.ETH! Claiming allocation for Campaign #2: https://cooked.eth #COOKED`;
-                } else {
-                    tweetMsg = `Raid #3 active on COOKED.ETH! Turning bad crypto trades into real rewards: https://cooked.eth #COOKED`;
-                }
-                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetMsg)}`, '_blank');
-
-                setTimeout(() => {
-                    questFlowStep = 'url';
-                    if (questModalTitle) questModalTitle.innerText = `CAMPAIGN #${activeQuestId} (STEP 2/2)`;
-                    if (questModalDesc) questModalDesc.innerText = `Paste your direct X post URL for @${cleanHandle}:`;
-                    questModalInput.value = '';
-                    questModalInput.placeholder = 'https://x.com/.../status/...';
-                    if (questModal) questModal.classList.remove('hidden');
-                }, 1000);
-
-           } else if (questFlowStep === 'url') {
-                const pending = ApplicationState.pendingQuest;
-                if (!pending) {
-                    if (questModal) questModal.classList.add('hidden');
-                    return;
-                }
-                
-                let cleanLink = val.toLowerCase();
-                if (cleanLink.includes('?')) cleanLink = cleanLink.split('?')[0];
-
-                const xStatusRegex = /^https?:\/\/(www\.)?(twitter|x)\.com\/[a-zA-Z0-9_]+\/status\/[0-9]+$/;
-
-                if (!xStatusRegex.test(cleanLink)) {
-                    alert('Invalid URL format! Must be a direct tweet status link.');
-                    return;
-                }
-if (!cleanLink.includes(`x.com/${pending.handle.toLowerCase()}/`) && !cleanLink.includes(`twitter.com/${pending.handle.toLowerCase()}/`)) {
-                    alert(`Security Rejection: This tweet link does NOT match @${pending.handle}.`);
-                    return;
-                }
-
-                if (ApplicationState.submittedQuestLinks.has(cleanLink)) {
-                    alert('Error: This exact tweet URL has already been claimed.');
-                    return;
-                }
-
-                ApplicationState.submittedQuestLinks.add(cleanLink);
-                ApplicationState.points += 1500;
-                
-                // Track completed quest ID to lock the button visually
-                if (!ApplicationState.completedQuests) ApplicationState.completedQuests = [];
-                ApplicationState.completedQuests.push(pending.questId);
-
-                ApplicationState.pendingQuest = null;
-                
-                saveState();
-                updateUI();
-                
-                // Visually lock the completed quest button
-                const targetQuestBtn = document.querySelector(`[data-quest="${pending.questId}"]`);
-                if (targetQuestBtn) {
-                    targetQuestBtn.innerText = "COMPLETED ✓";
-                    targetQuestBtn.disabled = true;
-                    targetQuestBtn.classList.replace('bg-black', 'bg-neutral-400');
-                }
-
-                if (questModal) questModal.classList.add('hidden');
-                
-                SoundSystem.playCoinTone();
-                alert(`Verified Campaign #${pending.questId} for @${pending.handle}! +1,500 Points Added.`);
-            }
-        });
-    }
-    
-
-    if (btnFcfsClaim) {
-        btnFcfsClaim.addEventListener('click', async () => {
-            if (ApplicationState.points < 5000) {
-                alert(`Insufficient points! You have ${ApplicationState.points.toLocaleString()} PTS. You need at least 5,000 PTS to claim.`);
+            if (!match) {
+                alert('Invalid URL format! Must be a direct tweet status link (e.g. https://x.com/Username/status/123456789).');
                 return;
             }
+
+            const extractedHandle = match[3];
+
+            if (ApplicationState.submittedQuestLinks.has(cleanLink)) {
+                alert('Error: This exact tweet URL has already been claimed.');
+                return;
+            }
+
+            ApplicationState.submittedQuestLinks.add(cleanLink);
+            ApplicationState.points += 1500;
+            
+            if (!ApplicationState.completedQuests) ApplicationState.completedQuests = [];
+            ApplicationState.completedQuests.push(activeQuestId);
+
+            saveState();
+            updateUI();
+            
+            const targetQuestBtn = document.querySelector(`[data-quest="${activeQuestId}"]`);
+            if (targetQuestBtn) {
+                targetQuestBtn.innerText = "COMPLETED ✓";
+                targetQuestBtn.disabled = true;
+                targetQuestBtn.classList.replace('bg-black', 'bg-neutral-400');
+            }
+
+            if (questModal) questModal.classList.add('hidden');
+            
+            SoundSystem.playCoinTone();
+            alert(`Verified Campaign #${activeQuestId} for @${extractedHandle}! +1,500 Points Added.`);
+        });
+    }
 
             if (!ApplicationState.isVerified || !ApplicationState.userWallet) {
                 openWalletModal();
