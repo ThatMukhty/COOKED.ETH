@@ -227,7 +227,8 @@ function updateUI() {
     if (lossDisplay) lossDisplay.innerText = `${ApplicationState.totalLossETH.toFixed(4)} ETH`;
 
     if (btnHeaderConnect && ApplicationState.userWallet) {
-        btnHeaderConnect.innerText = `${ApplicationState.userWallet.substring(0, 6)}...`;
+        const short = `${ApplicationState.userWallet.substring(0, 6)}...${ApplicationState.userWallet.substring(38)}`.toUpperCase();
+        btnHeaderConnect.innerText = short;
         btnHeaderConnect.classList.replace('bg-mustard', 'bg-mint');
     }
 
