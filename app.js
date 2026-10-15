@@ -518,80 +518,56 @@ if (btnConnectHeader) {
             if (questModal) questModal.classList.add('hidden');
         });
     }
-
-    if (questModalSubmit && questModalInput) {
+if (questModalSubmit && questModalInput) {
         questModalSubmit.addEventListener('click', () => {
-            const val = questModalInput.value.trim();
-            if (!val) return;
+            try {
+                const val = questModalInput.value.trim();
+                if (!val) return;
 
-            let cleanLink = val.toLowerCase();
-            if (cleanLink.includes('?')) cleanLink = cleanLink.split('?')[0];
+                let cleanLink = val.toLowerCase();
+                if (cleanLink.includes('?')) cleanLink = cleanLink.split('?')[0];
 
-            const xStatusRegex = /^https?:\/\/(www\.)?(twitter|x)\.com\/([a-zA-Z0-9_]+)\/status\/([0-9]+)$/;
-            const match = val.match(xStatusRegex);
+                const xStatusRegex = /^https?:\/\/(www\.)?(twitter|x)\.com\/([a-zA-Z0-9_]+)\/status\/([0-9]+)$/;
+                const match = val.match(xStatusRegex);
 
-            if (!match) {
-                alert('Invalid URL format! Must be a direct tweet status link (e.g. https://x.com/Username/status/123456789).');
-                return;
+                if (!match) {
+                    alert('Invalid URL format! Must be a direct tweet status link (e.g. https://x.com/Username/status/123456789).');
+                    return;
+                }
+
+                const extractedHandle = match[3];
+
+                if (ApplicationState.submittedQuestLinks.has(cleanLink)) {
+                    alert('Error: This exact tweet URL has already been claimed.');
+                    return;
+                }
+
+                ApplicationState.submittedQuestLinks.add(cleanLink);
+                ApplicationState.points += 1500;
+                
+                if (!ApplicationState.completedQuests) ApplicationState.completedQuests = [];
+                ApplicationState.completedQuests.push(activeQuestId);
+
+                saveState();
+                updateUI();
+                
+                const targetQuestBtn = document.querySelector(`[data-quest="${activeQuestId}"]`);
+                if (targetQuestBtn) {
+                    targetQuestBtn.innerText = "COMPLETED ✓";
+                    targetQuestBtn.disabled = true;
+                    targetQuestBtn.classList.replace('bg-black', 'bg-neutral-400');
+                }
+
+                if (questModal) questModal.classList.add('hidden');
+                
+                SoundSystem.playCoinTone();
+                alert(`Verified Campaign #${activeQuestId} for @${extractedHandle}! +1,500 Points Added.`);
+            } catch (err) {
+                console.error(err);
+                alert("Quest submission failed.");
             }
-
-            const extractedHandle = match[3];
-
-            if (ApplicationState.submittedQuestLinks.has(cleanLink)) {
-                alert('Error: This exact tweet URL has already been claimed.');
-                return;
-            }
-
-            ApplicationState.submittedQuestLinks.add(cleanLink);
-            ApplicationState.points += 1500;
-            
-            if (!ApplicationState.completedQuests) ApplicationState.completedQuests = [];
-            ApplicationState.completedQuests.push(activeQuestId);
-
-            saveState();
-            updateUI();
-            
-            const targetQuestBtn = document.querySelector(`[data-quest="${activeQuestId}"]`);
-            if (targetQuestBtn) {
-                targetQuestBtn.innerText = "COMPLETED ✓";
-                targetQuestBtn.disabled = true;
-                targetQuestBtn.classList.replace('bg-black', 'bg-neutral-400');
-            }
-
-            if (questModal) questModal.classList.add('hidden');
-            
-            SoundSystem.playCoinTone();
-            alert(`Verified Campaign #${activeQuestId} for @${extractedHandle}! +1,500 Points Added.`);
         });
     }
 
-            if (!ApplicationState.isVerified || !ApplicationState.userWallet) {
-                openWalletModal();
-                return;
-            }
-
-            try {
-                if (DEPLOYED_COOKED_CA !== "0x0000000000000000000000000000000000000000" && provider) {
-                    const minABI = ["function balanceOf(address owner) view returns (uint256)"];
-                    const tokenContract = new ethers.Contract(DEPLOYED_COOKED_CA, minABI, provider);
-                    const balance = await tokenContract.balanceOf(ApplicationState.userWallet);
-                    
-                    if (balance.eq(0)) {
-                        alert("Token Gate Rejection: Insufficient COOKED token balance in wallet.");
-                        return;
-                    }
-                }
-
-                ApplicationState.points -= 5000;
-                saveState();
-                updateUI();
-
-                SoundSystem.playCoinTone();
-                alert(`SUCCESS! Slot secured in Rewards Queue.`);
-            } catch (err) {
-                console.error(err);
-                alert("Token verification failed.");
-            }
-      
-   renderFeed();
+    renderFeed();
 });
