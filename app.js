@@ -555,7 +555,7 @@ let activeQuestId = null;
                     if (questModal) questModal.classList.remove('hidden');
                 }, 1000);
 
-            } else if (questFlowStep === 'url') {
+           } else if (questFlowStep === 'url') {
                 const pending = ApplicationState.pendingQuest;
                 if (!pending) {
                     if (questModal) questModal.classList.add('hidden');
@@ -584,14 +584,28 @@ let activeQuestId = null;
 
                 ApplicationState.submittedQuestLinks.add(cleanLink);
                 ApplicationState.points += 1500;
+                
+                // Track completed quest ID to lock the button visually
+                if (!ApplicationState.completedQuests) ApplicationState.completedQuests = [];
+                ApplicationState.completedQuests.push(pending.questId);
+
                 ApplicationState.pendingQuest = null;
                 
                 saveState();
                 updateUI();
+                
+                // Visually lock the completed quest button
+                const targetQuestBtn = document.querySelector(`[data-quest="${pending.questId}"]`);
+                if (targetQuestBtn) {
+                    targetQuestBtn.innerText = "COMPLETED ✓";
+                    targetQuestBtn.disabled = true;
+                    targetQuestBtn.classList.replace('bg-black', 'bg-neutral-400');
+                }
+
                 if (questModal) questModal.classList.add('hidden');
                 
                 SoundSystem.playCoinTone();
-                alert(`Verified Campaign #${activeQuestId} for @${pending.handle}! +1,500 Points Added.`);
+                alert(`Verified Campaign #${pending.questId} for @${pending.handle}! +1,500 Points Added.`);
             }
         });
     }
