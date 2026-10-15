@@ -593,7 +593,5 @@ if (btnConnectHeader) {
                 alert("Token verification failed.");
             }
         });
-    }
-
-    renderFeed();
+   renderFeed();
 });
